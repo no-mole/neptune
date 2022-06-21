@@ -1,0 +1,23 @@
+package bar
+
+import (
+	"context"
+
+	"{{.ModName}}/model"
+
+	"github.com/no-mole/neptune/database"
+)
+
+type Model struct {
+	ctx context.Context
+	db  *database.BaseDb
+}
+
+func New(ctx context.Context) *Model {
+	db := &database.BaseDb{}
+	db.SetEngine(ctx, model.MysqlEngineBar)
+	return &Model{
+		ctx: ctx,
+		db:  db,
+	}
+}

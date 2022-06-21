@@ -1,0 +1,54 @@
+stages:
+#  - prepare
+  - test
+#  - build
+  - package
+#  - deploy
+
+go-test:
+  stage: test
+  image: golang:1.17.0-alpine3.13
+  script:
+    - sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+    - apk add --update make git
+    - go env -w GOPROXY="https://goproxy.cn,direct"
+    - go env -w GO111MODULE=on
+    - make test
+  allow_failure: false
+
+#go_mod:
+#  stage: prepare
+#  image: golang:1.17.0-alpine3.13
+#  script:
+#    - sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+#    - apk add --update make
+#    - go env -w GO111MODULE=on
+#    - go env -w GOPROXY=https://goproxy.cn,direct
+#    - make vendor
+
+#go_build:
+#  stage: build
+#  image: golang:1.17.0-alpine3.13
+#  script:
+#    - sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+#    - apk add --update make
+#    - go env -w GO111MODULE=on
+#    - go env -w GOPROXY=https://goproxy.cn,direct
+#    - make vendor
+#    - make linux_build
+#    - ls -l
+#  allow_failure: false
+#  only:
+#    - tags
+
+build_image:
+  stage: package
+  image: docker:20.10.8-alpine3.14
+  script:
+    - sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+    - apk add --update make
+    - echo "使用 ${CI_COMMIT_REF_NAME} 构建镜像"
+    - ls -l
+    - make tag=${CI_COMMIT_REF_NAME} docker
+  only:
+    - tags

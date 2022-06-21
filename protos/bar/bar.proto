@@ -1,0 +1,25 @@
+syntax = "proto3";  //语法声明
+
+package bar; //包
+
+option go_package = "github.com/no-mole/neptune/protos/bar";
+
+service Service {
+  rpc SayHelly(SayHelloRequest)returns(SayHelloResponse){}
+}
+
+message SayHelloRequest{
+  string say = 1;
+}
+
+message SayHelloResponse{
+  string reply = 1;
+}
+
+message Bar {
+  // @cTags: binding:"foo_bar"
+  int64 id = 1;
+  string in = 2;
+  string out = 3;
+  string create_time = 4;
+}

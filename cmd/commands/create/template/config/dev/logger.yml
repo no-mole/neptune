@@ -1,0 +1,18 @@
+level: info
+queueLength: 1000
+dispatchers:
+  - type: stdout
+    formatter: json
+    tags: ["*"]
+  - type: file
+    formatter: json
+    tags: [app]
+    settings:
+      fileName: log/app.log
+      maxSize: 10
+      maxBackups: 3
+      maxAge: 3
+#  - type: grpc
+#    tags: [origin,master]
+#    settings:
+#      tag: origin-books
