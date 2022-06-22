@@ -1,5 +1,8 @@
 # Neptune-简单快速的grpc & web框架
 
+## Requirements
+* OS: Linux and Mac OS, Windows is on the road!
+
 ## Installation
 
 Using go proxy
