@@ -44,6 +44,7 @@ install protoc-gen-go
 go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0
 ```
 
+generate grpc file
 ```console
 neptune proto-gen -l golang -path /bar/bar.proto
 
