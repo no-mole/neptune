@@ -51,7 +51,7 @@ Neptune abstracts away the details of distributed systems. Here are the main fea
 
 - **Service Discovery** - Automatic service registration and name resolution. Service discovery is at the core of micro service
     development. When service A needs to speak to service B it needs the location of that service. The default discovery mechanism is
-    multicast DNS (mdns), a zeroconf system.
+    ETCD.
 
 - **Load Balancing** - Client side load balancing built on service discovery. Once we have the addresses of any number of instances
   of a service we now need a way to decide which node to route to. We use random hashed load balancing to provide even distribution
@@ -59,3 +59,13 @@ Neptune abstracts away the details of distributed systems. Here are the main fea
 
 - **RPC Client/Server** - RPC based request/response with support for bidirectional streaming. We provide an abstraction for synchronous
   communication. A request made to a service will be automatically resolved, load balanced, dialled and streamed.
+
+- **Tracing** - Link tracing is an integral part of a distributed system that is optimized and analyzed by recording call levels and 
+  time-consuming.
+
+- **Logging** - logs can record important events as monitoring. neptune supports sending logs to files, stdout, or sending logs to the
+  log center through grpc/udp protocol.
+
+- **Caching** - Use gin middleware to support automatic cache control of GET requests.
+
+- **Databases&Queues** - Gorm(postgreSQL/MySQL/Clickhouse)、ES、Mongo、Redis、RabbitMQ、Kafka.
