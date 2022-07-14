@@ -124,7 +124,7 @@ func checkProtoc() bool {
 	}
 
 	if !strings.Contains(stdout.String(), "libprotoc 3.20.1") {
-		println("please use  3.20.1")
+		println("please use protoc 3.20.1")
 		return false
 	}
 	return true

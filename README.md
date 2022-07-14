@@ -31,6 +31,19 @@ $ neptune help
 ```
 
 How to generate proto files in different languages
+
+choose your programming language install [protoc 3.20.1](https://github.com/protocolbuffers/protobuf/releases/tag/v3.20.1) 
+
+install protoc-gen-go-grpc
+```console
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
+```
+
+install protoc-gen-go 
+```console
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0
+```
+
 ```console
 neptune proto-gen -l golang -path /bar/bar.proto
 
