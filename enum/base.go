@@ -34,4 +34,10 @@ var (
 		Code:     500,
 		Msg:      "execute func error",
 	}
+
+	ErrorGrpcConnect ErrorNum = ErrorNumEntry{
+		HttpCode: http.StatusInternalServerError,
+		Code:     500,
+		Msg:      "grpc connect error",
+	}
 )
