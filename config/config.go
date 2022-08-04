@@ -19,7 +19,10 @@ var GlobalConfig *model.App
 
 func Init(ctx context.Context) error {
 	var err error
-	rootDir := utils.GetCurrentAbPath()
+	rootDir := os.Getenv("ROOT_DIR")
+	if rootDir == "" {
+		rootDir = utils.GetCurrentAbPath()
+	}
 	//init env
 	GlobalConfig = &model.App{
 		BasePath: rootDir,
