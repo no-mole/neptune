@@ -3,6 +3,7 @@ package output
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/no-mole/neptune/enum"
+	"net/http"
 )
 
 type Result struct {
@@ -29,4 +30,27 @@ func JsonNoTag(ctx *gin.Context, enum enum.ErrorNum, data interface{}) {
 
 func File(ctx *gin.Context, filePath string) {
 	ctx.File(filePath)
+}
+
+type yamlRender struct {
+	Data []byte
+}
+
+func (r yamlRender) Render(w http.ResponseWriter) error {
+	r.WriteContentType(w)
+	_, err := w.Write(r.Data)
+	return err
+}
+
+// WriteContentType (YAML) writes YAML ContentType for response.
+func (r yamlRender) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, []string{"application/x-yaml; charset=utf-8"})
+}
+
+func Yaml(ctx *gin.Context, data interface{}) {
+	if bytes, ok := data.([]byte); !ok {
+		ctx.YAML(http.StatusOK, data)
+	} else {
+		ctx.Render(http.StatusOK, yamlRender{Data: bytes})
+	}
 }
