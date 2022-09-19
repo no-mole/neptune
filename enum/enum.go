@@ -2,6 +2,7 @@ package enum
 
 import (
 	"context"
+	"google.golang.org/grpc/status"
 )
 
 type ErrorNum interface {
@@ -19,6 +20,17 @@ type ErrorNum interface {
 
 	WithHttpCode(code int) ErrorNum
 	GetHttpCode() int
+}
+
+func NewError(code int, msg string) ErrorNumEntry {
+	return ErrorNumEntry{
+		Code: code,
+		Msg:  msg,
+	}
+}
+
+func NewErrorFromGrpcStatus(s *status.Status) ErrorNumEntry {
+	return NewError(int(s.Code()), s.Message())
 }
 
 type ErrorNumEntry struct {
