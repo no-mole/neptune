@@ -1,8 +1,9 @@
-package python
+package php
 
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path"
@@ -11,32 +12,29 @@ import (
 	"github.com/no-mole/neptune/utils"
 )
 
-func InitPythonFile(args string) {
+func InitPhpFile(args string) error {
 	if len(args) == 0 {
-		println("No corresponding address found")
-		return
+		return errors.New("no corresponding address found")
 	}
 
 	curDir := utils.GetWorkdir()
 	filePath := fmt.Sprintf("%s/%s", curDir, args)
 
-	initProtoFiles(filePath)
+	return initProtoFiles(filePath)
 }
 
-func initProtoFiles(filePath string) {
+func initProtoFiles(filePath string) error {
 	paths := strings.Split(path.Base(filePath), ".")
-	if len(paths) == 0 {
-		println("not match file .proto")
-		return
+	if len(paths) < 2 {
+		return errors.New("not match file .proto")
 	}
 	if paths[1] != "proto" {
-		println("not match file .proto")
-		return
+		return errors.New("not match file .proto")
 	}
 
 	fileName := path.Base(filePath)
 	upDir := path.Dir(filePath)
-	cmdStr := fmt.Sprintf("cd %s && protoc --python_out=. ./%s", upDir, fileName)
+	cmdStr := fmt.Sprintf("cd %s && protoc --php_out=. ./%s", upDir, fileName)
 	if path.Base(upDir)+".proto" != fileName {
 		println("Warning: Package name and file name are different")
 	}
@@ -46,8 +44,7 @@ func initProtoFiles(filePath string) {
 
 	err := protoInit.Start()
 	if err != nil {
-		println(err.Error())
-		return
+		return err
 	}
 
 	stderr := bytes.NewBuffer(nil)
@@ -62,10 +59,13 @@ func initProtoFiles(filePath string) {
 		}
 	}
 
-	protoInit.Wait()
+	err = protoInit.Wait()
+	if err != nil {
+		return err
+	}
 
 	if errFlag {
-		println(stderr.String())
-		return
+		return errors.New(stderr.String())
 	}
+	return nil
 }

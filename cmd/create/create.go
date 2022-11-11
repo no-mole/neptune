@@ -3,6 +3,7 @@ package create
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,54 +11,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/no-mole/neptune/cmd/commands"
 	"github.com/no-mole/neptune/utils"
 )
-
-func init() {
-	commands.Registry("new", CreateCommand)
-}
-
-var CreateCommand = &commands.Command{
-	Run:       New,
-	UsageLine: "new [$modName]",
-	Helper: `
-	Creates Neptune application.
-
-	├── bootstrap
-	│ ├── database.go		// init database,support drivers:mysql、clickhouse、postgreSql
-	│ ├── grpc_server.go	// init grpc server,for discovery third party service
-	│ ├── logger.go         // init logger
-	│ ├── redis.go			//init redis connection pool
-	│ ├── router.go         //init http router
-	│ └── service.go        //registry grpc service
-	├── config
-	│ ├── app.yaml		    //app conf,appName、namespace、version、grpcPort、httpPort....
-	│ ├── dev
-	│ │ ├── config.yaml     //config center conf
-	│ │ └── registry.yaml   //registry center conf
-	│ ├── grey
-	│ ├── prod
-	│ └── test
-	├── controller
-	│ └── bar
-	│     └── bar.go        //implementation gin handle (is optional)
-	├── model
-	│ ├── bar
-	│ │ ├── log.go
-	│ │ └── model.go       
-	│ └── model.go          //model common variable
-	├── service
-	│ └── bar
-	│     └── service.go    //implementation grpc interface
-	├── .env.example        //move to .env,mark envMode & envDebug，default mode=prod,debug=false
-	├── Dockerfile          //multi-stage construction
-	├── Makefile            //make image 
-	├── docker_build.sh     //or  sh ./docker_build.sh tag=v0.1
-	├── main.go 
-	└── go.mod
-`,
-}
 
 //go:embed template template/.env.example template/.gitignore template/.gitlab-ci.yml
 var tpls embed.FS
@@ -68,7 +23,7 @@ var tpls embed.FS
 // See https://stackoverflow.com/questions/18159704/how-to-debug-exit-status-1-error-when-running-exec-command-in-golang
 
 func CmdRun(cmd *exec.Cmd) (output string, err error) {
-	fmt.Printf("execute %s", cmd.String())
+	fmt.Printf("execute %s\n", cmd.String())
 
 	var out bytes.Buffer
 
@@ -84,15 +39,13 @@ func CmdRun(cmd *exec.Cmd) (output string, err error) {
 	return out.String(), nil
 }
 
-func New(_ *commands.Command, args []string) {
-	if len(args) == 0 {
-		println("command [new] must have a mod name,use [neptune help new] for more tips!")
-		return
+func Run(args []string) error {
+	if moduleName == defaultModuleName && len(args) > 0 {
+		moduleName = args[0]
 	}
-	modName := strings.Trim(strings.TrimSpace(args[0]), "/")
+	modName := strings.Trim(strings.TrimSpace(moduleName), "/")
 	if len(modName) == 0 {
-		println("command [new] must have a mod name,use [neptune help new] for more tips!")
-		return
+		return errors.New("command [new] must have a mod name")
 	}
 
 	curDir := utils.GetWorkdir()
@@ -101,8 +54,7 @@ func New(_ *commands.Command, args []string) {
 
 	err := os.MkdirAll(baseDir, os.ModePerm)
 	if err != nil {
-		println(err.Error())
-		return
+		return err
 	}
 
 	stack := []string{"template"}
@@ -116,13 +68,12 @@ func New(_ *commands.Command, args []string) {
 		println("create dir:", path.Join(baseDir, strings.Trim(strings.TrimPrefix(dirPath, "template"), "/")))
 		err = os.MkdirAll(path.Join(baseDir, strings.Trim(strings.TrimPrefix(dirPath, "template"), "/")), os.ModePerm)
 		if err != nil {
-			println(err.Error())
-			return
+			return err
 		}
 
 		dirInfo, err := tpls.ReadDir(dirPath)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		for _, f := range dirInfo {
 			if f.IsDir() {
@@ -133,8 +84,7 @@ func New(_ *commands.Command, args []string) {
 			filePath := path.Join(dirPath, f.Name())
 			fileBody, err := tpls.ReadFile(filePath) //read file
 			if err != nil {
-				println(err.Error())
-				return
+				return err
 			}
 
 			writeFileName := path.Join(baseDir, strings.Trim(strings.TrimSuffix(strings.TrimPrefix(filePath, "template"), "template"), "/")) //去掉前后的template
@@ -143,13 +93,11 @@ func New(_ *commands.Command, args []string) {
 			if strings.HasSuffix(filePath, ".gotemplate") { //是template 文件
 				tpl, err := template.New(f.Name()).Parse(string(fileBody))
 				if err != nil {
-					println(err.Error())
-					return
+					return err
 				}
 				err = tpl.Execute(buf, data)
 				if err != nil {
-					println(err.Error())
-					return
+					return err
 				}
 			} else {
 				buf.Write(fileBody)
@@ -157,8 +105,7 @@ func New(_ *commands.Command, args []string) {
 			println("create file:", writeFileName)
 			err = os.WriteFile(writeFileName, buf.Bytes(), os.ModePerm)
 			if err != nil {
-				println(err.Error())
-				return
+				return err
 			}
 		}
 	}
@@ -169,8 +116,9 @@ func New(_ *commands.Command, args []string) {
 	fmt.Println(output)
 
 	if err != nil {
-		fmt.Printf("create new app[%s] failed, the error log is above.", modName)
-	} else {
-		fmt.Printf("create new app [%s] success,don`t forgot edit [.env] for dev mode!", modName)
+		fmt.Printf("create new app[%s] failed", modName)
+		return err
 	}
+	fmt.Printf("create new app [%s] success,don`t forgot edit [.env] for dev mode!", modName)
+	return nil
 }

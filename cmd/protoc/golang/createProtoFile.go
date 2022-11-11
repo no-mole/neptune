@@ -15,7 +15,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/no-mole/neptune/cmd/commands/protoc/inject_tags"
+	inject_tags2 "github.com/no-mole/neptune/cmd/protoc/inject_tags"
+
 	"github.com/no-mole/neptune/utils"
 )
 
@@ -33,34 +34,33 @@ func Metadata() *registry.Metadata {
 	}
 }`
 
-func InitGolangProto(args string) {
+func InitGolangProto(args string) error {
 	if len(args) == 0 {
-		println("No corresponding address found")
-		return
+		return errors.New("No corresponding address found")
 	}
-
-	if !checkProtocGenGo() {
-		return
+	err := checkProtocGenGo()
+	if err != nil {
+		return err
 	}
-	if !checkProtocGenGoGrpc() {
-		return
+	err = checkProtocGenGoGrpc()
+	if err != nil {
+		return err
 	}
 
 	curDir := utils.GetWorkdir()
 	filePath := fmt.Sprintf("%s/%s", curDir, args)
 
-	initProtoFiles(filePath)
+	return initProtoFiles(filePath)
 }
 
-func checkProtocGenGo() bool {
+func checkProtocGenGo() error {
 	checkProtoc := exec.Command("sh", "-c", "protoc-gen-go --version")
 	errReader, _ := checkProtoc.StderrPipe()
 	outReader, _ := checkProtoc.StdoutPipe()
 
 	err := checkProtoc.Start()
 	if err != nil {
-		println(err.Error())
-		return false
+		return err
 	}
 
 	stderr := bytes.NewBuffer(nil)
@@ -84,29 +84,29 @@ func checkProtocGenGo() bool {
 		}
 	}
 
-	checkProtoc.Wait()
+	err = checkProtoc.Wait()
+	if err != nil {
+		return err
+	}
 
 	if errFlag {
-		println(stderr.String())
-		return false
+		return errors.New(stderr.String())
 	}
 
 	if !strings.Contains(stdout.String(), "protoc-gen-go v1.28.0") {
-		println("version mismatch please run: go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0")
-		return false
+		return errors.New("version mismatch please run: go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0")
 	}
-	return true
+	return nil
 }
 
-func checkProtocGenGoGrpc() bool {
+func checkProtocGenGoGrpc() error {
 	checkProtoc := exec.Command("sh", "-c", "protoc-gen-go-grpc --version")
 	errReader, _ := checkProtoc.StderrPipe()
 	outReader, _ := checkProtoc.StdoutPipe()
 
 	err := checkProtoc.Start()
 	if err != nil {
-		println(err.Error())
-		return false
+		return err
 	}
 
 	stderr := bytes.NewBuffer(nil)
@@ -130,30 +130,29 @@ func checkProtocGenGoGrpc() bool {
 		}
 	}
 
-	checkProtoc.Wait()
+	err = checkProtoc.Wait()
+	if err != nil {
+		return err
+	}
 
 	if errFlag {
-		println(stderr.String())
-		return false
+		return errors.New(stderr.String())
 	}
 
 	if !strings.Contains(stdout.String(), "protoc-gen-go-grpc 1.2.0") {
-		println("version mismatch please run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0")
-		return false
+		return errors.New("version mismatch please run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0")
 	}
-	return true
+	return nil
 
 }
 
-func initProtoFiles(filePath string) {
+func initProtoFiles(filePath string) error {
 	paths := strings.Split(path.Base(filePath), ".")
-	if len(paths) == 0 {
-		println("not match file .proto")
-		return
+	if len(paths) < 2 {
+		return errors.New("not match file .proto")
 	}
 	if paths[1] != "proto" {
-		println("not match file .proto")
-		return
+		return errors.New("not match file .proto")
 	}
 
 	fileName := path.Base(filePath)
@@ -169,8 +168,7 @@ func initProtoFiles(filePath string) {
 
 	err := protoInit.Start()
 	if err != nil {
-		println(err.Error())
-		return
+		return err
 	}
 
 	stderr := bytes.NewBuffer(nil)
@@ -186,14 +184,12 @@ func initProtoFiles(filePath string) {
 	}
 
 	err = protoInit.Wait()
-	//if err != nil {
-	//	println(err.Error())
-	//	return
-	//}
+	if err != nil {
+		return err
+	}
 
 	if errFlag {
-		println(stderr.String())
-		return
+		return errors.New(stderr.String())
 	}
 
 	gprcpbPath := strings.Replace(filePath, ".proto", "_grpc.pb.go", -1)
@@ -201,8 +197,7 @@ func initProtoFiles(filePath string) {
 	if strings.Contains(fileName, "*") {
 		files, err := ioutil.ReadDir(upDir)
 		if err != nil {
-			println(err.Error())
-			return
+			return err
 		}
 		for _, file := range files {
 			if strings.Contains(file.Name(), "_grpc.pb.go") {
@@ -215,8 +210,7 @@ func initProtoFiles(filePath string) {
 
 	packageName, serviceDesc, err := ProtoServiceDesc(gprcpbPath)
 	if err != nil {
-		println(err.Error())
-		return
+		return err
 	}
 
 	data := map[string]interface{}{
@@ -229,25 +223,22 @@ func initProtoFiles(filePath string) {
 	buf := bytes.NewBufferString("")
 	tpl, err := template.New("metadata").Parse(metadataTempalte)
 	if err != nil {
-		println(err.Error())
-		return
+		return err
 	}
 	err = tpl.Execute(buf, data)
 	if err != nil {
-		println(err.Error())
-		return
+		return err
 	}
 
 	err = os.WriteFile(upDir+"/metadata.go", buf.Bytes(), os.ModePerm)
 	if err != nil {
-		println(err.Error())
-		return
+		return err
 	}
-	err = inject_tags.ParseAndWrite(pbFiles, nil, false)
+	err = inject_tags2.ParseAndWrite(pbFiles, nil, false)
 	if err != nil {
-		println(err.Error())
-		return
+		return err
 	}
+	return nil
 }
 
 func ProtoServiceDesc(filePath string) (packageName, serviceDesc string, err error) {
