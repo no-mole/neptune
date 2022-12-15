@@ -12,7 +12,6 @@ import (
 
 	"google.golang.org/grpc/resolver"
 
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/no-mole/neptune/env"
 	"github.com/no-mole/neptune/registry"
 	"google.golang.org/grpc"
@@ -90,12 +89,12 @@ func Init(ctx context.Context, opt *Options, connSetting ...registry.GrpcMeta) {
 }
 
 func NodeDial(ctx context.Context, scheme, serviceName string, opts *Options) (*grpc.ClientConn, error) {
-	retryOps := []grpc_retry.CallOption{
-		grpc_retry.WithMax(2),
-		grpc_retry.WithPerRetryTimeout(time.Second * 2),
-		grpc_retry.WithBackoff(grpc_retry.BackoffLinearWithJitter(time.Second, 0.2)),
-	}
-	retryInterceptor := grpc_retry.UnaryClientInterceptor(retryOps...)
+	//retryOps := []grpc_retry.CallOption{
+	//	grpc_retry.WithMax(2),
+	//	grpc_retry.WithPerRetryTimeout(time.Second * 2),
+	//	grpc_retry.WithBackoff(grpc_retry.BackoffLinearWithJitter(time.Second, 0.2)),
+	//}
+	//retryInterceptor := grpc_retry.UnaryClientInterceptor(retryOps...)
 
 	opts.dialOptions = append([]grpc.DialOption{
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
@@ -106,7 +105,7 @@ func NodeDial(ctx context.Context, scheme, serviceName string, opts *Options) (*
 			PermitWithoutStream: true,
 		}),
 	}, opts.dialOptions...)
-	opts.dialOptions = append(opts.dialOptions, grpc.WithChainUnaryInterceptor(retryInterceptor))
+	//opts.dialOptions = append(opts.dialOptions, grpc.WithChainUnaryInterceptor(retryInterceptor))
 	return grpc.DialContext(ctx, scheme+"://author/"+serviceName, opts.dialOptions...)
 }
 
