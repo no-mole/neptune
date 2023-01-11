@@ -74,6 +74,7 @@ func Init(ctx context.Context, opt *Options, connSetting ...registry.GrpcMeta) {
 
 	for _, mm := range connSetting {
 		meta := mm.Metadata()
+		//todo scheme /
 		scheme := fmt.Sprintf("%s%s", meta.Namespace, meta.Version)
 		r := registry.NewResolver(scheme, cli)
 		resolver.Register(r)
@@ -126,4 +127,13 @@ func GetConnection(meta registry.GrpcMeta) (Conn, error) {
 func genPoolKey(m registry.GrpcMeta) string {
 	meta := m.Metadata()
 	return env.GetEnvMode() + "/" + meta.Version + "/" + meta.ServiceName
+}
+
+func Call(meta *registry.Metadata, fn func(conn grpc.ClientConnInterface) error) error {
+	c, err := GetConnection(meta)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	return fn(c.Value())
 }

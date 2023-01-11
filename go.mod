@@ -8,7 +8,6 @@ require (
 	github.com/go-ini/ini v1.66.4
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/json-iterator/go v1.1.12
 	github.com/olivere/elastic/v7 v7.0.32
