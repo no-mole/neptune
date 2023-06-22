@@ -27,7 +27,13 @@ var Command = &cobra.Command{
 		  string create_time = 4;
 		}`,
 	Example: "neptune proto-gen [$ProtoFilePath] OR proto-gen *.proto OR proto-gen -l java $ProtoFilePath",
-	RunE:    Run,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		err := Run(cmd, args)
+		if err != nil {
+			println(err.Error())
+		}
+		return err
+	},
 }
 
 var language string
@@ -35,5 +41,5 @@ var protoFilePath string
 
 func init() {
 	Command.Flags().StringVarP(&language, "language", "l", "golang", "specify language. [golang|python|java|php]")
-	Command.Flags().StringVarP(&protoFilePath, "path", "", "", "specify proto path,default is the last parameter.")
+	Command.Flags().StringVarP(&protoFilePath, "path", "p", "", "specify proto path,default is the last parameter.")
 }

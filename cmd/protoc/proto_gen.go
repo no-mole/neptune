@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"os/exec"
 	"strings"
 
@@ -23,8 +22,6 @@ func Run(_ *cobra.Command, args []string) error {
 		}
 		protoFilePath = args[0]
 	}
-	fmt.Printf("%v", args)
-	println(language)
 
 	err := checkProtoc()
 	if err != nil {
