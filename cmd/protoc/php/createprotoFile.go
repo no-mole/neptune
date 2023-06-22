@@ -18,12 +18,13 @@ func InitPhpFile(args string) error {
 	}
 
 	curDir := utils.GetWorkdir()
-	filePath := fmt.Sprintf("%s/%s", curDir, args)
 
-	return initProtoFiles(filePath)
+	return initProtoFiles(curDir, args)
 }
 
-func initProtoFiles(filePath string) error {
+func initProtoFiles(curDir, args string) error {
+	filePath := fmt.Sprintf("%s/%s", curDir, args)
+
 	paths := strings.Split(path.Base(filePath), ".")
 	if len(paths) < 2 {
 		return errors.New("not match file .proto")
@@ -34,7 +35,11 @@ func initProtoFiles(filePath string) error {
 
 	fileName := path.Base(filePath)
 	upDir := path.Dir(filePath)
-	cmdStr := fmt.Sprintf("cd %s && protoc --php_out=. ./%s", upDir, fileName)
+
+	if len(args) > 0 && args[0] == '/' {
+		args = args[1:]
+	}
+	cmdStr := fmt.Sprintf("protoc --php_out=. ./%s", fileName)
 	if path.Base(upDir)+".proto" != fileName {
 		println("Warning: Package name and file name are different")
 	}

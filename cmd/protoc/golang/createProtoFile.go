@@ -8,7 +8,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -48,9 +47,7 @@ func InitGolangProto(args string) error {
 	}
 
 	curDir := utils.GetWorkdir()
-	filePath := fmt.Sprintf("%s/%s", curDir, args)
-
-	return initProtoFiles(filePath)
+	return initProtoFiles(curDir, args)
 }
 
 func checkProtocGenGo() error {
@@ -146,7 +143,10 @@ func checkProtocGenGoGrpc() error {
 
 }
 
-func initProtoFiles(filePath string) error {
+func initProtoFiles(curDir, args string) error {
+
+	filePath := fmt.Sprintf("%s/%s", curDir, args)
+
 	paths := strings.Split(path.Base(filePath), ".")
 	if len(paths) < 2 {
 		return errors.New("not match file .proto")
@@ -157,8 +157,12 @@ func initProtoFiles(filePath string) error {
 
 	fileName := path.Base(filePath)
 	upDir := path.Dir(filePath)
-	cmdStr := fmt.Sprintf("cd %s && protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative   --proto_path=.  --proto_path=../   %s", upDir, fileName)
+	if len(args) > 0 && args[0] == '/' {
+		args = args[1:]
+	}
 
+	cmdStr := fmt.Sprintf("protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative   --proto_path=.  --proto_path=../   %s", args)
+	println(cmdStr)
 	if path.Base(upDir)+".proto" != fileName {
 		println("Warning: Package name and file name are different")
 	}
@@ -183,10 +187,7 @@ func initProtoFiles(filePath string) error {
 		}
 	}
 
-	err = protoInit.Wait()
-	if err != nil {
-		return err
-	}
+	_ = protoInit.Wait()
 
 	if errFlag {
 		return errors.New(stderr.String())
@@ -195,7 +196,7 @@ func initProtoFiles(filePath string) error {
 	gprcpbPath := strings.Replace(filePath, ".proto", "_grpc.pb.go", -1)
 	pbFiles := strings.Replace(filePath, ".proto", ".pb.go", -1)
 	if strings.Contains(fileName, "*") {
-		files, err := ioutil.ReadDir(upDir)
+		files, err := os.ReadDir(upDir)
 		if err != nil {
 			return err
 		}
