@@ -49,8 +49,7 @@ generate grpc file
 neptune proto-gen -l golang -i /project/protos protos/xxx.proto
 
 -l Specifies the programming language, currently supported golang, java, python, php; Default golang
--i Specify the directory above the proto file
-
+-i Specify the directory above the proto file; like --proto_path=
 ```
 
 
