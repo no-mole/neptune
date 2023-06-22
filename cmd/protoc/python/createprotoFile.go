@@ -12,18 +12,18 @@ import (
 	"github.com/no-mole/neptune/utils"
 )
 
-func InitPythonFile(args string) error {
+func InitPythonFile(args string, includePaths []string) error {
 	if len(args) == 0 {
 		return errors.New("No corresponding address found")
 	}
 
 	curDir := utils.GetWorkdir()
 
-	return initProtoFiles(curDir, args)
+	return initProtoFiles(curDir, args, includePaths)
 }
 
-func initProtoFiles(curDir, args string) error {
-	filePath := fmt.Sprintf("%s/%s", curDir, args)
+func initProtoFiles(curDir, targetFile string, includePaths []string) error {
+	filePath := fmt.Sprintf("%s/%s", curDir, targetFile)
 
 	paths := strings.Split(path.Base(filePath), ".")
 	if len(paths) < 2 {
@@ -35,10 +35,16 @@ func initProtoFiles(curDir, args string) error {
 
 	fileName := path.Base(filePath)
 	upDir := path.Dir(filePath)
-	if len(args) > 0 && args[0] == '/' {
-		args = args[1:]
+	if len(targetFile) > 0 && targetFile[0] == '/' {
+		targetFile = targetFile[1:]
 	}
 	cmdStr := fmt.Sprintf("protoc --python_out=. ./%s", fileName)
+	for _, v := range includePaths {
+		cmdStr += fmt.Sprintf(" --proto_path=%s ", v)
+	}
+	cmdStr += targetFile
+	println(cmdStr)
+
 	if path.Base(upDir)+".proto" != fileName {
 		println("Warning: Package name and file name are different")
 	}

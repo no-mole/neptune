@@ -26,7 +26,7 @@ necessary dependencies.
 Otherwise, to install the `neptune` package or using `neptune` cli, run the following command:
 
 ```console
-$ go get github.com/no-mole/neptune
+$ go install github.com/no-mole/neptune@latest
 $ neptune help
 ```
 
@@ -46,10 +46,10 @@ go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0
 
 generate grpc file
 ```console
-neptune proto-gen -l golang -path /bar/bar.proto
+neptune proto-gen -l golang -i /project/protos protos/xxx.proto
 
 -l Specifies the programming language, currently supported golang, java, python, php; Default golang
--path Specify the address of the proto file
+-i Specify the directory above the proto file
 
 ```
 

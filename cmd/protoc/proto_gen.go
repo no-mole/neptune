@@ -4,24 +4,22 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"github.com/no-mole/neptune/cmd/protoc/golang"
+	"github.com/no-mole/neptune/cmd/protoc/java"
+	"github.com/no-mole/neptune/cmd/protoc/php"
+	"github.com/no-mole/neptune/cmd/protoc/python"
 	"os/exec"
 	"strings"
-
-	golang2 "github.com/no-mole/neptune/cmd/protoc/golang"
-	java2 "github.com/no-mole/neptune/cmd/protoc/java"
-	php2 "github.com/no-mole/neptune/cmd/protoc/php"
-	python2 "github.com/no-mole/neptune/cmd/protoc/python"
 
 	"github.com/spf13/cobra"
 )
 
 func Run(_ *cobra.Command, args []string) error {
-	if protoFilePath == "" {
-		if len(args) == 0 {
-			return errors.New("command [proto-gen] must have a proto file")
-		}
-		protoFilePath = args[0]
+
+	if len(args) == 0 {
+		return errors.New("command [proto-gen] must have a proto file")
 	}
+	targetFile := args[0]
 
 	err := checkProtoc()
 	if err != nil {
@@ -29,13 +27,13 @@ func Run(_ *cobra.Command, args []string) error {
 	}
 	switch language {
 	case "golang":
-		err = golang2.InitGolangProto(protoFilePath)
+		err = golang.InitGolangProto(targetFile, protoFilePaths)
 	case "java":
-		err = java2.InitJavaFile(protoFilePath)
+		err = java.InitJavaFile(targetFile, protoFilePaths)
 	case "python":
-		err = python2.InitPythonFile(protoFilePath)
+		err = python.InitPythonFile(targetFile, protoFilePaths)
 	case "php":
-		err = php2.InitPhpFile(protoFilePath)
+		err = php.InitPhpFile(targetFile, protoFilePaths)
 	}
 	return err
 }

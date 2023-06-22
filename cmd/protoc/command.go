@@ -37,9 +37,9 @@ var Command = &cobra.Command{
 }
 
 var language string
-var protoFilePath string
+var protoFilePaths []string
 
 func init() {
 	Command.Flags().StringVarP(&language, "language", "l", "golang", "specify language. [golang|python|java|php]")
-	Command.Flags().StringVarP(&protoFilePath, "path", "p", "", "specify proto path,default is the last parameter.")
+	Command.Flags().StringSliceVarP(&protoFilePaths, "include", "i", []string{}, "specify protos path, default is the last parameter.")
 }

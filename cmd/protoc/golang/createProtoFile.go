@@ -33,8 +33,8 @@ func Metadata() *registry.Metadata {
 	}
 }`
 
-func InitGolangProto(args string) error {
-	if len(args) == 0 {
+func InitGolangProto(targetFile string, paths []string) error {
+	if len(targetFile) == 0 {
 		return errors.New("No corresponding address found")
 	}
 	err := checkProtocGenGo()
@@ -47,7 +47,7 @@ func InitGolangProto(args string) error {
 	}
 
 	curDir := utils.GetWorkdir()
-	return initProtoFiles(curDir, args)
+	return initProtoFiles(curDir, targetFile, paths)
 }
 
 func checkProtocGenGo() error {
@@ -143,9 +143,9 @@ func checkProtocGenGoGrpc() error {
 
 }
 
-func initProtoFiles(curDir, args string) error {
+func initProtoFiles(curDir, targetFile string, includePaths []string) error {
 
-	filePath := fmt.Sprintf("%s/%s", curDir, args)
+	filePath := fmt.Sprintf("%s/%s", curDir, targetFile)
 
 	paths := strings.Split(path.Base(filePath), ".")
 	if len(paths) < 2 {
@@ -157,11 +157,15 @@ func initProtoFiles(curDir, args string) error {
 
 	fileName := path.Base(filePath)
 	upDir := path.Dir(filePath)
-	if len(args) > 0 && args[0] == '/' {
-		args = args[1:]
+	if len(targetFile) > 0 && targetFile[0] == '/' {
+		targetFile = targetFile[1:]
 	}
+	cmdStr := fmt.Sprintf("protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative   --proto_path=.  --proto_path=../ ")
 
-	cmdStr := fmt.Sprintf("protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative   --proto_path=.  --proto_path=../   %s", args)
+	for _, v := range includePaths {
+		cmdStr += fmt.Sprintf(" --proto_path=%s ", v)
+	}
+	cmdStr += targetFile
 	println(cmdStr)
 	if path.Base(upDir)+".proto" != fileName {
 		println("Warning: Package name and file name are different")

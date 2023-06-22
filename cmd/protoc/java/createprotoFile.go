@@ -12,17 +12,17 @@ import (
 	"github.com/no-mole/neptune/utils"
 )
 
-func InitJavaFile(args string) error {
-	if len(args) == 0 {
+func InitJavaFile(targetFile string, includePaths []string) error {
+	if len(targetFile) == 0 {
 		return errors.New("no corresponding address found")
 	}
 
 	curDir := utils.GetWorkdir()
-	return initProtoFiles(curDir, args)
+	return initProtoFiles(curDir, targetFile, includePaths)
 }
 
-func initProtoFiles(curDir, args string) error {
-	filePath := fmt.Sprintf("%s/%s", curDir, args)
+func initProtoFiles(curDir, targetFile string, includePaths []string) error {
+	filePath := fmt.Sprintf("%s/%s", curDir, targetFile)
 
 	paths := strings.Split(path.Base(filePath), ".")
 	if len(paths) == 0 {
@@ -34,11 +34,17 @@ func initProtoFiles(curDir, args string) error {
 
 	fileName := path.Base(filePath)
 	upDir := path.Dir(filePath)
-	if len(args) > 0 && args[0] == '/' {
-		args = args[1:]
+	if len(targetFile) > 0 && targetFile[0] == '/' {
+		targetFile = targetFile[1:]
 	}
 
 	cmdStr := fmt.Sprintf("protoc --java_out=. ./%s", fileName)
+	for _, v := range includePaths {
+		cmdStr += fmt.Sprintf(" --proto_path=%s ", v)
+	}
+	cmdStr += targetFile
+	println(cmdStr)
+
 	if path.Base(upDir)+".proto" != fileName {
 		println("Warning: Package name and file name are different")
 	}
@@ -63,10 +69,7 @@ func initProtoFiles(curDir, args string) error {
 		}
 	}
 
-	err = protoInit.Wait()
-	if err != nil {
-		return err
-	}
+	_ = protoInit.Wait()
 
 	if errFlag {
 		return errors.New(stderr.String())
