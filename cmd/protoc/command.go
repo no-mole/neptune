@@ -47,6 +47,6 @@ func init() {
 	Command.Flags().StringVarP(&language, "language", "l", "golang", "specify language. [golang|python|java|php]")
 	Command.Flags().StringSliceVarP(&protoFilePaths, "include", "i", []string{}, "specify protos path, default is the last parameter.")
 	Command.Flags().StringVarP(&namespace, "namespace", "n", "neptune", "specify proto service namespace")
-	Command.Flags().StringVarP(&version, "version", "ver", "v1", "specify proto service version")
+	Command.Flags().StringVarP(&version, "version", "v", "v1", "specify proto service version")
 
 }
