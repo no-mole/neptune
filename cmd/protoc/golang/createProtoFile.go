@@ -28,8 +28,8 @@ import (
 func Metadata() *registry.Metadata {
 	return &registry.Metadata{
 		ServiceDesc: {{.ServiceDesc}},
-		Namespace:   {{.namespace}},
-		Version:     {{.version}},
+		Namespace:   "{{.namespace}}",
+		Version:     "{{.version}}",
 	}
 }`
 
