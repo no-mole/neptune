@@ -28,12 +28,12 @@ import (
 func Metadata() *registry.Metadata {
 	return &registry.Metadata{
 		ServiceDesc: {{.ServiceDesc}},
-		Namespace:   "neptune",
-		Version:     "v1",
+		Namespace:   {{.namespace}},
+		Version:     {{.version}},
 	}
 }`
 
-func InitGolangProto(targetFile string, paths []string) error {
+func InitGolangProto(targetFile string, paths []string, namespace, version string) error {
 	if len(targetFile) == 0 {
 		return errors.New("No corresponding address found")
 	}
@@ -47,7 +47,7 @@ func InitGolangProto(targetFile string, paths []string) error {
 	}
 
 	curDir := utils.GetWorkdir()
-	return initProtoFiles(curDir, targetFile, paths)
+	return initProtoFiles(curDir, targetFile, paths, namespace, version)
 }
 
 func checkProtocGenGo() error {
@@ -143,7 +143,7 @@ func checkProtocGenGoGrpc() error {
 
 }
 
-func initProtoFiles(curDir, targetFile string, includePaths []string) error {
+func initProtoFiles(curDir, targetFile string, includePaths []string, namespace, version string) error {
 
 	filePath := fmt.Sprintf("%s/%s", curDir, targetFile)
 
@@ -221,6 +221,8 @@ func initProtoFiles(curDir, targetFile string, includePaths []string) error {
 	data := map[string]interface{}{
 		"PackageName": packageName,
 		"ServiceDesc": serviceDesc,
+		"namespace":   namespace,
+		"version":     version,
 	}
 
 	//生成proto的文件夹

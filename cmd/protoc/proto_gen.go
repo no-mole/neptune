@@ -27,7 +27,7 @@ func Run(_ *cobra.Command, args []string) error {
 	}
 	switch language {
 	case "golang":
-		err = golang.InitGolangProto(targetFile, protoFilePaths)
+		err = golang.InitGolangProto(targetFile, protoFilePaths, namespace, version)
 	case "java":
 		err = java.InitJavaFile(targetFile, protoFilePaths)
 	case "python":

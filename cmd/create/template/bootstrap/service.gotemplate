@@ -4,6 +4,7 @@ import (
 	"context"
 	"google.golang.org/grpc"
 
+	"github.com/no-mole/neptune/config"
 	"github.com/no-mole/neptune/grpc_pool"
 	"github.com/no-mole/neptune/registry"
 	"github.com/no-mole/neptune/middlewares"
@@ -19,6 +20,7 @@ func DiscoveryService(ctx context.Context) error {
 		),
 	)
 	grpc_pool.Init(ctx,
+		config.GlobalConfig.Registry.Type,
 		option,
 		bar.Metadata(),
 	)

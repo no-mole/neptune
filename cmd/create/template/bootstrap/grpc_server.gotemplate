@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"context"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"google.golang.org/grpc"
 	"github.com/no-mole/neptune/app"
 	"github.com/no-mole/neptune/middlewares"
 	barPb "github.com/no-mole/neptune/protos/bar"
@@ -12,10 +12,10 @@ import (
 
 func InitGrpcServer(_ context.Context) error {
 	s := app.NewGrpcServer(
-		grpc_middleware.WithUnaryServerChain(
+		grpc.ChainUnaryInterceptor(
 			middleware.TracingServerInterceptor(),
 		),
-		grpc_middleware.WithStreamServerChain(
+		grpc.ChainStreamInterceptor(
 			middleware.TracingServerStreamInterceptor(),
 		),
 	)
