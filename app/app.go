@@ -120,15 +120,30 @@ func startGrpcServe(ctx context.Context) (err error) {
 	if registry.GetRegister() == nil {
 		conf := config.GetRegistryConf()
 		errCh := make(chan error, 1)
-		reg, err := registry.NewEtcdRegister(ctx, &registry.EtcdRegisterConfig{
-			Endpoints: conf.Endpoint,
-			Username:  conf.UserName,
-			Password:  conf.Password,
-		}, errCh)
-		if err != nil {
-			return err
+		switch conf.Type {
+		case "etcd":
+			reg, err := registry.NewEtcdRegister(ctx, &registry.EtcdRegisterConfig{
+				Endpoints: conf.Endpoint,
+				Username:  conf.UserName,
+				Password:  conf.Password,
+			}, errCh)
+			if err != nil {
+				return err
+			}
+			registry.SetRegister(reg)
+		case "nacos":
+			reg, err := registry.NewNaCosRegister(ctx, &registry.NaCosConfig{
+				Username:  conf.UserName,
+				Password:  conf.Password,
+				Endpoint:  conf.Endpoint,
+				Namespace: config.GlobalConfig.Namespace,
+			}, errCh)
+			if err != nil {
+				return err
+			}
+			registry.SetRegister(reg)
 		}
-		registry.SetRegister(reg)
+
 		go func() {
 			//listen register errors
 			err := <-errCh

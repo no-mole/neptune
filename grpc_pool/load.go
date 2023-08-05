@@ -4,13 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
-
-	"github.com/no-mole/neptune/config"
-	clientv3 "go.etcd.io/etcd/client/v3"
-
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
+	"time"
 
 	"github.com/no-mole/neptune/env"
 	"github.com/no-mole/neptune/registry"
@@ -58,26 +54,19 @@ func WithOptions(opts ...Option) *Options {
 	return o
 }
 
-func Init(ctx context.Context, opt *Options, connSetting ...registry.GrpcMeta) {
-	cli, err := clientv3.New(clientv3.Config{
-		Endpoints:            strings.Split(config.GetRegistryConf().Endpoint, ","),
-		Username:             config.GetRegistryConf().UserName,
-		Password:             config.GetRegistryConf().Password,
-		DialTimeout:          1 * time.Second,
-		DialKeepAliveTime:    5 * time.Second,
-		DialKeepAliveTimeout: 1 * time.Second,
-		PermitWithoutStream:  true,
-	})
-	if err != nil {
-		return
-	}
-
+func Init(ctx context.Context, registryType string, opt *Options, connSetting ...registry.GrpcMeta) {
 	for _, mm := range connSetting {
 		meta := mm.Metadata()
 		//todo scheme /
-		scheme := fmt.Sprintf("%s%s", meta.Namespace, meta.Version)
-		r := registry.NewResolver(scheme, cli)
-		resolver.Register(r)
+		scheme := fmt.Sprintf("%s-%s", meta.Namespace, meta.Version)
+
+		switch registryType {
+		case "etcd":
+			resolver.Register(registry.NewEtcdResolver(scheme))
+		case "nacos":
+			resolver.Register(registry.NewNaCosResolver(scheme))
+		}
+
 		pool, err := newPool(func() (*grpc.ClientConn, error) {
 			return NodeDial(ctx, scheme,
 				meta.ServiceName, opt)
@@ -90,23 +79,15 @@ func Init(ctx context.Context, opt *Options, connSetting ...registry.GrpcMeta) {
 }
 
 func NodeDial(ctx context.Context, scheme, serviceName string, opts *Options) (*grpc.ClientConn, error) {
-	//retryOps := []grpc_retry.CallOption{
-	//	grpc_retry.WithMax(2),
-	//	grpc_retry.WithPerRetryTimeout(time.Second * 2),
-	//	grpc_retry.WithBackoff(grpc_retry.BackoffLinearWithJitter(time.Second, 0.2)),
-	//}
-	//retryInterceptor := grpc_retry.UnaryClientInterceptor(retryOps...)
-
 	opts.dialOptions = append([]grpc.DialOption{
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                KeepAliveTime,
 			Timeout:             KeepAliveTimeout,
 			PermitWithoutStream: true,
 		}),
 	}, opts.dialOptions...)
-	//opts.dialOptions = append(opts.dialOptions, grpc.WithChainUnaryInterceptor(retryInterceptor))
 	return grpc.DialContext(ctx, scheme+"://author/"+serviceName, opts.dialOptions...)
 }
 

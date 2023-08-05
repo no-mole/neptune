@@ -2,20 +2,15 @@ package registry
 
 import (
 	"context"
-	"fmt"
+	"github.com/no-mole/neptune/config"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/no-mole/neptune/logger"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/resolver"
 )
-
-var manager *ServiceInstanceManager
-
-func init() {
-	manager = NewServiceInstanceManager()
-}
 
 type etcdResolver struct {
 	scheme     string
@@ -25,7 +20,19 @@ type etcdResolver struct {
 	once       sync.Once
 }
 
-func NewResolver(scheme string, client *clientv3.Client) (r resolver.Builder) {
+func NewEtcdResolver(scheme string) (r resolver.Builder) {
+	client, err := clientv3.New(clientv3.Config{
+		Endpoints:            strings.Split(config.GetRegistryConf().Endpoint, ","),
+		Username:             config.GetRegistryConf().UserName,
+		Password:             config.GetRegistryConf().Password,
+		DialTimeout:          1 * time.Second,
+		DialKeepAliveTime:    5 * time.Second,
+		DialKeepAliveTimeout: 1 * time.Second,
+		PermitWithoutStream:  true,
+	})
+	if err != nil {
+		return
+	}
 	return &etcdResolver{
 		scheme: scheme,
 		cli:    client,
@@ -49,7 +56,7 @@ func (r *etcdResolver) Build(target resolver.Target, cc resolver.ClientConn, opt
 	return r, nil
 }
 
-//get addresses from local
+// get addresses from local
 func (r *etcdResolver) localCache(key string) error {
 	instances := manager.Pick(key)
 	if len(instances) == 0 {
@@ -68,8 +75,7 @@ func (r *etcdResolver) Scheme() string {
 
 // 当有连接被出现异常时，会触发该方法，因为这时候可能是有服务实例挂了，需要立即实现一次服务发现
 func (r *etcdResolver) ResolveNow(rn resolver.ResolveNowOptions) {
-	fmt.Println("resolve now")
-	// TODO check
+	//无需操作，etcd,自动更新实例
 }
 
 // Close closes the resolver.
@@ -115,34 +121,15 @@ func (r *etcdResolver) watchEvent(events []*clientv3.Event, keyPrefix string) {
 			}
 			if !exist(r.addrList, addr) {
 				r.addrList = append(r.addrList, resolver.Address{Addr: addr})
-				r.clientConn.UpdateState(resolver.State{Addresses: r.addrList})
+				_ = r.clientConn.UpdateState(resolver.State{Addresses: r.addrList})
 			}
 			manager.AddNode(keyPrefix, &GrpcServiceInstance{Endpoint: addr})
 		case clientv3.EventTypeDelete:
 			if s, ok := remove(r.addrList, addr); ok {
 				r.addrList = s
-				r.clientConn.UpdateState(resolver.State{Addresses: r.addrList})
+				_ = r.clientConn.UpdateState(resolver.State{Addresses: r.addrList})
 			}
-			manager.DelNode(keyPrefix)
+			manager.DelNode(keyPrefix, &GrpcServiceInstance{Endpoint: addr})
 		}
 	}
-}
-
-func exist(l []resolver.Address, addr string) bool {
-	for i := range l {
-		if l[i].Addr == addr {
-			return true
-		}
-	}
-	return false
-}
-
-func remove(s []resolver.Address, addr string) ([]resolver.Address, bool) {
-	for i := range s {
-		if s[i].Addr == addr {
-			s[i] = s[len(s)-1]
-			return s[:len(s)-1], true
-		}
-	}
-	return nil, false
 }

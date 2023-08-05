@@ -3,7 +3,6 @@ package registry
 import (
 	"fmt"
 
-	"github.com/no-mole/neptune/config"
 	"google.golang.org/grpc"
 )
 
@@ -18,8 +17,7 @@ func (m *Metadata) Metadata() *Metadata {
 }
 
 func (m *Metadata) GenKey() string {
-	//todo remove GlobalConfig
-	return fmt.Sprintf("/%s%s/%s/%s:%d", m.Namespace, m.Version, m.ServiceName, config.GlobalConfig.IP, config.GlobalConfig.GrpcPort)
+	return fmt.Sprintf("/%s-%s/%s/", m.Namespace, m.Version, m.ServiceName)
 }
 
 type GrpcMeta interface {

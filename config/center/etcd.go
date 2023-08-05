@@ -19,6 +19,8 @@ type Etcd struct {
 
 func init() {
 	RegistryImplementation("etcd", &Etcd{})
+	RegistryImplementation("nacos", &NaCos{})
+
 }
 
 func (s *Etcd) Init(opts ...Option) error {

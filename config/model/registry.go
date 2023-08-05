@@ -1,6 +1,6 @@
 package model
 
-//Registry SC information
+// Registry SC information
 type Registry struct {
 	Type string `yaml:"type"` //默认etcd
 
