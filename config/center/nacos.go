@@ -8,6 +8,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -26,27 +27,29 @@ func (s *NaCos) Init(opts ...Option) error {
 	if s.opt.Endpoint == "" {
 		s.opt.Endpoint = defaultEtcdEndpoint
 	}
-	address := strings.Split(s.opt.Endpoint, ":")
-	if len(address) < 2 {
-		return errors.New("illegal parameter of endpoint ")
-	}
-	port, err := strconv.ParseInt(address[1], 10, 64)
-	if err != nil {
-		return err
-	}
 
-	sc := []constant.ServerConfig{
-		*constant.NewServerConfig(address[0], uint64(port), constant.WithContextPath("/nacos")),
+	var serverConfigs []constant.ServerConfig
+	for _, ep := range strings.Split(s.opt.Endpoint, ",") {
+		scheme, host, port, path, err := getHostAndPort(ep)
+		if err != nil {
+			return err
+		}
+		serverConfigs = append(serverConfigs, constant.ServerConfig{
+			IpAddr:      host,
+			ContextPath: path,
+			Port:        port,
+			Scheme:      scheme,
+		})
 	}
 
 	//create ClientConfig
 	cc := *constant.NewClientConfig(
 		constant.WithNamespaceId(s.opt.Namespace),
-		constant.WithTimeoutMs(5000),
+		constant.WithTimeoutMs(2000),
 		constant.WithNotLoadCacheAtStart(true),
-		constant.WithLogDir("/tmp/nacos/log"),
-		constant.WithCacheDir("/tmp/nacos/cache"),
-		constant.WithLogLevel("debug"),
+		constant.WithLogDir("log/nacos/log"),
+		constant.WithCacheDir("log/nacos/cache"),
+		constant.WithLogLevel("warn"),
 		constant.WithUsername(s.opt.Auth.Username),
 		constant.WithPassword(s.opt.Auth.Password),
 	)
@@ -55,7 +58,7 @@ func (s *NaCos) Init(opts ...Option) error {
 	cli, err := clients.NewConfigClient(
 		vo.NacosClientParam{
 			ClientConfig:  &cc,
-			ServerConfigs: sc,
+			ServerConfigs: serverConfigs,
 		},
 	)
 	if err != nil {
@@ -198,4 +201,25 @@ func (s *NaCos) WatchWithPrefix(ctx context.Context, item *Item, callback func(i
 		return
 	}
 	s.Watch(ctx, ret, callback)
+}
+
+func getHostAndPort(rawurl string) (scheme, host string, port uint64, path string, err error) {
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return "", "", 0, "", err
+	}
+	host = u.Hostname()
+	portStr := u.Port()
+	if portStr != "" {
+		portInt, err := strconv.ParseUint(portStr, 10, 64)
+		if err != nil {
+			return "", "", 0, "", err
+		}
+		port = portInt
+	} else if u.Scheme == "http" {
+		port = 80
+	} else if u.Scheme == "https" {
+		port = 443
+	}
+	return u.Scheme, host, port, u.Path, nil
 }

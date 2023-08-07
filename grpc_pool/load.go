@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/no-mole/neptune/config"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 	"time"
@@ -54,7 +55,8 @@ func WithOptions(opts ...Option) *Options {
 	return o
 }
 
-func Init(ctx context.Context, registryType string, opt *Options, connSetting ...registry.GrpcMeta) {
+func Init(ctx context.Context, opt *Options, connSetting ...registry.GrpcMeta) {
+	registryType := config.GlobalConfig.Registry.Type
 	for _, mm := range connSetting {
 		meta := mm.Metadata()
 		//todo scheme /

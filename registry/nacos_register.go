@@ -2,13 +2,13 @@ package registry
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/no-mole/neptune/config"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -26,17 +26,19 @@ type NaCosRegister struct {
 }
 
 func NewNaCosRegister(_ context.Context, conf *NaCosConfig, errCh chan error) (_ Registration, err error) {
-	address := strings.Split(conf.Endpoint, ":")
-	if len(address) < 2 {
-		return nil, errors.New("illegal parameter of endpoint ")
-	}
-	port, err := strconv.ParseInt(address[1], 10, 64)
-	if err != nil {
-		return nil, err
-	}
 
-	sc := []constant.ServerConfig{
-		*constant.NewServerConfig(address[0], uint64(port), constant.WithContextPath("/nacos")),
+	var serverConfigs []constant.ServerConfig
+	for _, ep := range strings.Split(conf.Endpoint, ",") {
+		scheme, host, port, path, err := getHostAndPort(ep)
+		if err != nil {
+			return nil, err
+		}
+		serverConfigs = append(serverConfigs, constant.ServerConfig{
+			IpAddr:      host,
+			ContextPath: path,
+			Port:        port,
+			Scheme:      scheme,
+		})
 	}
 
 	//create ClientConfig
@@ -55,7 +57,7 @@ func NewNaCosRegister(_ context.Context, conf *NaCosConfig, errCh chan error) (_
 	client, err := clients.NewNamingClient(
 		vo.NacosClientParam{
 			ClientConfig:  &cc,
-			ServerConfigs: sc,
+			ServerConfigs: serverConfigs,
 		},
 	)
 	if err != nil {
@@ -105,4 +107,25 @@ func (nacos *NaCosRegister) UnRegister(_ context.Context, meta GrpcMeta) (err er
 		return
 	}
 	return
+}
+
+func getHostAndPort(rawurl string) (scheme, host string, port uint64, path string, err error) {
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return "", "", 0, "", err
+	}
+	host = u.Hostname()
+	portStr := u.Port()
+	if portStr != "" {
+		portInt, err := strconv.ParseUint(portStr, 10, 64)
+		if err != nil {
+			return "", "", 0, "", err
+		}
+		port = portInt
+	} else if u.Scheme == "http" {
+		port = 80
+	} else if u.Scheme == "https" {
+		port = 443
+	}
+	return u.Scheme, host, port, u.Path, nil
 }
