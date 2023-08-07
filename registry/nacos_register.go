@@ -44,11 +44,11 @@ func NewNaCosRegister(_ context.Context, conf *NaCosConfig, errCh chan error) (_
 	//create ClientConfig
 	cc := *constant.NewClientConfig(
 		constant.WithNamespaceId(conf.Namespace),
-		constant.WithTimeoutMs(5000),
+		constant.WithTimeoutMs(2000),
 		constant.WithNotLoadCacheAtStart(true),
-		constant.WithLogDir("/tmp/nacos/log"),
-		constant.WithCacheDir("/tmp/nacos/cache"),
-		constant.WithLogLevel("debug"),
+		constant.WithLogDir("log/nacos_registry/log"),
+		constant.WithCacheDir("log/nacos_registry/cache"),
+		constant.WithLogLevel("warn"),
 		constant.WithUsername(conf.Username),
 		constant.WithPassword(conf.Password),
 	)
