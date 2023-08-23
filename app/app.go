@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"net"
 	"net/http"
 	"os"
@@ -68,6 +69,7 @@ type hook struct {
 }
 
 func NewGrpcServer(opts ...grpc.ServerOption) *grpc.Server {
+	opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	app.GrpcEngine = grpc.NewServer(opts...)
 	return app.GrpcEngine
 }

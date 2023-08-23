@@ -3,12 +3,12 @@ package http_client
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 const (
@@ -28,19 +28,14 @@ func doHTTP(ctx context.Context, method, url string, header map[string][]string,
 		req.Header.Set(k, v[0]) // multi values not supported in http option
 	}
 
-	http.DefaultClient.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := otelhttp.DefaultClient.Do(req)
 	if err != nil {
 		err = errors.Wrapf(err, "do request %s %s err", method, url)
 		return nil, _StatusDoReqErr, err
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		err = errors.Wrapf(err, "read resp body from %s %s err", method, url)
 		return nil, _StatusReadRespErr, err

@@ -11,6 +11,7 @@ import (
 
 	"github.com/no-mole/neptune/env"
 	"github.com/no-mole/neptune/registry"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/keepalive"
@@ -89,6 +90,8 @@ func NodeDial(ctx context.Context, scheme, serviceName string, opts *Options) (*
 			Timeout:             KeepAliveTimeout,
 			PermitWithoutStream: true,
 		}),
+		grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 	}, opts.dialOptions...)
 	return grpc.DialContext(ctx, scheme+"://author/"+serviceName, opts.dialOptions...)
 }
