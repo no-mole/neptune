@@ -12,14 +12,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/no-mole/neptune/registry"
-
-	"github.com/no-mole/neptune/utils"
-
 	"github.com/gin-gonic/gin"
-	_ "go.uber.org/automaxprocs"
-
 	"github.com/no-mole/neptune/config"
+	"github.com/no-mole/neptune/registry"
+	"github.com/no-mole/neptune/utils"
+	//"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	_ "go.uber.org/automaxprocs"
 	"google.golang.org/grpc"
 )
 
