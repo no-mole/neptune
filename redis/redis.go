@@ -3,7 +3,9 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"github.com/go-redis/redis/extra/redisotel/v8"
 	"github.com/go-redis/redis/v8"
+	"go.opentelemetry.io/otel/attribute"
 	"sync"
 )
 
@@ -41,6 +43,15 @@ func Init(redisName string, confStr string) error {
 	if err != nil {
 		return err
 	}
+	client.AddHook(
+		redisotel.NewTracingHook(
+			redisotel.WithAttributes(
+				attribute.String("redis_name", redisName),
+				attribute.String("redis_host", redisConf.Host),
+				attribute.Int("redis_db", redisConf.Database),
+			),
+		),
+	)
 	Client.StoreClient(redisName, client)
 	return nil
 }

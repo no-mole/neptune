@@ -3,15 +3,16 @@ package database
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/otel/attribute"
 	"sync"
 	"time"
 
 	validate "github.com/go-playground/validator/v10"
 	"github.com/no-mole/neptune/logger"
-	gormLogger "gorm.io/gorm/logger"
-
 	"gorm.io/gorm"
+	gormLogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
+	"gorm.io/plugin/opentelemetry/tracing"
 )
 
 var (
@@ -147,6 +148,21 @@ func initDriver(conf *Config, opts ...Option) (*gorm.DB, error) {
 	}
 
 	db, err := gorm.Open(driver.Dial(conf), gromConf)
+	if err != nil {
+		logger.Fatal(context.Background(), "database", err)
+		return nil, err
+	}
+	err = db.Use(
+		tracing.NewPlugin(
+			tracing.WithoutMetrics(),
+			tracing.WithAttributes(
+				attribute.String("database_driver", conf.Driver),
+				attribute.String("database_host", conf.Host),
+				attribute.Int("database_port", conf.Port),
+				attribute.String("database_db", conf.Database),
+			),
+		),
+	)
 	if err != nil {
 		logger.Fatal(context.Background(), "database", err)
 		return nil, err

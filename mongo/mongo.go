@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 )
 
 var (
@@ -75,7 +76,8 @@ func InitMongoConn(ctx context.Context, cfg *MongoConfig) *mongo.Client {
 		SetMaxPoolSize(uint64(cfg.MaxPoolSize)).
 		SetReplicaSet(cfg.ReplicaSetName).
 		SetMaxConnIdleTime(time.Duration(cfg.MaxIdleTimeMS)).
-		SetRegistry(bson.DefaultRegistry))
+		SetRegistry(bson.DefaultRegistry).
+		SetMonitor(otelmongo.NewMonitor()))
 	if err != nil {
 		panic(err)
 	}

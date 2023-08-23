@@ -2,10 +2,12 @@ package elastic_search
 
 import (
 	"encoding/json"
+	"net/http"
 	"sync"
 	"time"
 
 	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic/v7/trace/opentelemetry"
 )
 
 var (
@@ -32,6 +34,11 @@ func InitElasticSearch(esName string, confStr string, opts ...elastic.ClientOpti
 	if err != nil {
 		panic(err)
 	}
+
+	httpClient := &http.Client{
+		Transport: opentelemetry.NewTransport(),
+	}
+
 	options := []elastic.ClientOptionFunc{
 		elastic.SetURL(esConf.Host),
 		elastic.SetBasicAuth(esConf.Username, esConf.Password),
@@ -39,6 +46,7 @@ func InitElasticSearch(esName string, confStr string, opts ...elastic.ClientOpti
 		elastic.SetHealthcheckTimeoutStartup(5 * time.Second),
 		elastic.SetHealthcheckTimeout(1 * time.Second),
 		elastic.SetHealthcheckInterval(60 * time.Second),
+		elastic.SetHttpClient(httpClient),
 	}
 
 	if len(opts) > 0 {
@@ -48,6 +56,7 @@ func InitElasticSearch(esName string, confStr string, opts ...elastic.ClientOpti
 	if err != nil {
 		panic(err)
 	}
+
 	Client.StoreClient(esName, client)
 	return nil
 }
