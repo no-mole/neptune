@@ -4,17 +4,17 @@ import (
 	jsoniter "github.com/json-iterator/go"
 )
 
-var JsonInstance = jsoniter.ConfigCompatibleWithStandardLibrary
+var Instance = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func Marshal(v interface{}) ([]byte, error) {
-	return JsonInstance.Marshal(v)
+	return Instance.Marshal(v)
 }
 
 func Unmarshal(data []byte, v interface{}) error {
-	return JsonInstance.Unmarshal(data, v)
+	return Instance.Unmarshal(data, v)
 }
 
-var JsonNoTagInstance = jsoniter.Config{
+var NoTagInstance = jsoniter.Config{
 	EscapeHTML:                    false,
 	MarshalFloatWith6Digits:       true, // will lose precession
 	ObjectFieldMustBeSimpleString: true, // do not unescape object field
@@ -22,9 +22,9 @@ var JsonNoTagInstance = jsoniter.Config{
 }.Froze()
 
 func MarshalNoTag(v interface{}) ([]byte, error) {
-	return JsonNoTagInstance.Marshal(v)
+	return NoTagInstance.Marshal(v)
 }
 
 func UnmarshalNoTag(data []byte, v interface{}) error {
-	return JsonNoTagInstance.Unmarshal(data, v)
+	return NoTagInstance.Unmarshal(data, v)
 }

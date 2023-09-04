@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func LimitRateWithBucket(interval time.Duration, cap int64) gin.HandlerFunc {
+func GinLimitRateWithBucket(interval time.Duration, cap int64) gin.HandlerFunc {
 	bucket := newBucket(interval, cap)
 	return func(ctx *gin.Context) {
 		if bucket.TakeAvailable(1) < 1 {

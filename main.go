@@ -13,7 +13,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:     "neptune",
 	Short:   "Neptune is a Fast and Practical tool for Managing your Application.",
-	Version: "v0.1.0",
+	Version: "v0.2.0",
 }
 
 func main() {

@@ -33,17 +33,17 @@ func Init(redisName string, confStr string) error {
 	if err != nil {
 		return err
 	}
-	client := redis.NewClient(&redis.Options{
+	curClient := redis.NewClient(&redis.Options{
 		Addr:     redisConf.Host,
 		Password: redisConf.Password, // no password set
 		DB:       redisConf.Database, // use default DB
 	})
 	// 发送一个ping命令,测试是否通
-	_, err = client.Ping(context.Background()).Result()
+	_, err = curClient.Ping(context.Background()).Result()
 	if err != nil {
 		return err
 	}
-	client.AddHook(
+	curClient.AddHook(
 		redisotel.NewTracingHook(
 			redisotel.WithAttributes(
 				attribute.String("redis_name", redisName),
@@ -52,7 +52,7 @@ func Init(redisName string, confStr string) error {
 			),
 		),
 	)
-	Client.StoreClient(redisName, client)
+	Client.StoreClient(redisName, curClient)
 	return nil
 }
 

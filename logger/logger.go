@@ -80,12 +80,12 @@ func initDefaultLogger() {
 
 var defaultLogger Logger
 
-//SetLogger set global logger
+// SetLogger set global logger
 func SetLogger(l Logger) {
 	defaultLogger = l
 }
 
-//GetLogger get global logger
+// GetLogger get global logger
 func GetLogger() Logger {
 	return defaultLogger
 }
@@ -100,8 +100,6 @@ func NewLogger(ctx context.Context, queueLength int) Logger {
 		handlers:    make([]Handle, 0),
 		doneCh:      make(chan struct{}),
 	}
-	//默认增加tracing的handle
-	instance.AddHandle(ctx, TracingHandle)
 	go instance.timerChecker()
 	go instance.flush()
 	defaultLogger = instance

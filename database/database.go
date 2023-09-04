@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 	"errors"
-	"go.opentelemetry.io/otel/attribute"
+	"fmt"
 	"sync"
 	"time"
 
@@ -12,12 +12,11 @@ import (
 	"gorm.io/gorm"
 	gormLogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
-	"gorm.io/plugin/opentelemetry/tracing"
 )
 
 var (
-	//configMap map[string]*gorm.DB
-	configMap sync.Map
+	//databases map[string]*gorm.DB
+	databases sync.Map
 	validator = validate.New()
 )
 
@@ -35,6 +34,8 @@ type Config struct {
 
 	WriteTimeout time.Duration `json:"write_timeout" yaml:"write_timeout" validate:"required"`
 	ReadTimeout  time.Duration `json:"read_timeout" yaml:"read_timeout" validate:"required"`
+
+	Plugins []string `json:"plugins" yaml:"plugins"`
 }
 
 func (c *Config) Validate() error {
@@ -46,7 +47,7 @@ type BaseDb struct {
 }
 
 func (b *BaseDb) SetEngine(ctx context.Context, engine string) bool {
-	if value, ok := configMap.Load(engine); ok {
+	if value, ok := databases.Load(engine); ok {
 		if db, ok := value.(*gorm.DB); ok {
 			b.DB = db.WithContext(ctx)
 			return true
@@ -55,65 +56,69 @@ func (b *BaseDb) SetEngine(ctx context.Context, engine string) bool {
 	return false
 }
 
-type Option interface {
-	Apply(opt *option)
-}
-
 type option struct {
-	maxIdleConn int
-	maxOpenConn int
-	maxLifetime time.Duration
-	DebugLog    bool
+	maxIdleConn  int
+	maxOpenConn  int
+	maxLifetime  time.Duration
+	DebugLog     bool
+	PluginsNames []string
 }
 
-type optionFunc func(*option)
+type OptionFunc func(*option)
 
-func (of optionFunc) Apply(cfg *option) { of(cfg) }
-
-func ApplyOptions(opt *option, fns ...Option) {
+func ApplyOptions(opt *option, fns ...OptionFunc) {
 	for _, f := range fns {
-		f.Apply(opt)
+		f(opt)
 	}
 }
 
-func WithMaxIdleConn(maxIdleConn int) Option {
-	return optionFunc(func(opt *option) {
+func WithPlugins(plugins ...string) OptionFunc {
+	return func(o *option) {
+		o.PluginsNames = append(o.PluginsNames, plugins...)
+	}
+}
+
+func WithMaxIdleConn(maxIdleConn int) OptionFunc {
+	return func(opt *option) {
 		opt.maxIdleConn = maxIdleConn
-	})
+	}
 }
 
-func WithMaxOpenConn(maxOpenConn int) Option {
-	return optionFunc(func(opt *option) {
+func WithMaxOpenConn(maxOpenConn int) OptionFunc {
+	return func(opt *option) {
 		opt.maxOpenConn = maxOpenConn
-	})
+	}
 }
 
-func WithMaxLifetime(maxLifetime time.Duration) Option {
-	return optionFunc(func(opt *option) {
+func WithMaxLifetime(maxLifetime time.Duration) OptionFunc {
+	return func(opt *option) {
 		opt.maxLifetime = maxLifetime
-	})
+	}
 }
 
-func WithDebugLog(isDebug bool) Option {
-	return optionFunc(func(opt *option) {
+func WithDebugLog(isDebug bool) OptionFunc {
+	return func(opt *option) {
 		opt.DebugLog = isDebug
-	})
+	}
 }
 
-func Init(dbName string, dbConfig *Config, isDebug bool) error {
-	err := dbConfig.Validate()
+func Init(dbName string, conf *Config, isDebug bool) error {
+	err := conf.Validate()
 	if err != nil {
 		return err
 	}
-	db, err := initDriver(dbConfig,
-		WithMaxIdleConn(dbConfig.MaxIdleConnes),
-		WithMaxOpenConn(dbConfig.MaxOpenConnes),
+
+	db, err := initDriver(conf,
+		WithMaxIdleConn(conf.MaxIdleConnes),
+		WithMaxOpenConn(conf.MaxOpenConnes),
 		WithDebugLog(isDebug),
-		WithMaxLifetime(time.Duration(dbConfig.MaxLifetime)*time.Second),
+		WithMaxLifetime(time.Duration(conf.MaxLifetime)*time.Second),
+		WithPlugins(),
 	)
 	if err != nil {
 		return err
 	}
+
 	dbInstance, err := db.DB()
 	if err != nil {
 		return err
@@ -124,58 +129,61 @@ func Init(dbName string, dbConfig *Config, isDebug bool) error {
 		return err
 	}
 
-	configMap.Store(dbName, db)
+	databases.Store(dbName, db)
 
 	return nil
 }
 
-func initDriver(conf *Config, opts ...Option) (*gorm.DB, error) {
+func initDriver(conf *Config, opts ...OptionFunc) (*gorm.DB, error) {
 	opt := new(option)
 	ApplyOptions(opt, opts...)
 
-	gromConf := &gorm.Config{
+	gormConf := &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
-		Logger: &Logger{},
+		Logger: NewLogger(
+			logger.WithField("database_driver", conf.Driver),
+			logger.WithField("database_host", conf.Host),
+			logger.WithField("database_port", conf.Port),
+			logger.WithField("database_database_name", conf.Database),
+			logger.WithField("database_username", conf.Username),
+		),
+		Plugins: map[string]gorm.Plugin{},
 	}
+
+	for _, pluginName := range opt.PluginsNames {
+		pluginFunc, ok := PluginFuncByName(pluginName)
+		if !ok {
+			return nil, fmt.Errorf("database plugin [%s] not registered", pluginName)
+		}
+		plugin := pluginFunc(conf)
+		gormConf.Plugins[plugin.Name()] = plugin
+	}
+
 	if opt.DebugLog {
-		gromConf.Logger.LogMode(gormLogger.Info)
+		gormConf.Logger.LogMode(gormLogger.Info)
 	}
+
 	driver, ok := GetDriver(conf.Driver)
 	if !ok {
 		return nil, errors.New("not supported database driver name:" + conf.Driver)
 	}
 
-	db, err := gorm.Open(driver.Dial(conf), gromConf)
-	if err != nil {
-		logger.Fatal(context.Background(), "database", err)
-		return nil, err
-	}
-	err = db.Use(
-		tracing.NewPlugin(
-			tracing.WithoutMetrics(),
-			tracing.WithAttributes(
-				attribute.String("database_driver", conf.Driver),
-				attribute.String("database_host", conf.Host),
-				attribute.Int("database_port", conf.Port),
-				attribute.String("database_db", conf.Database),
-			),
-		),
-	)
+	db, err := gorm.Open(driver.Dial(conf), gormConf)
 	if err != nil {
 		logger.Fatal(context.Background(), "database", err)
 		return nil, err
 	}
 
-	sqlDB, err := db.DB()
+	instance, err := db.DB()
 	if err != nil {
 		logger.Fatal(context.Background(), "database", err)
 		return nil, err
 	}
 
-	sqlDB.SetMaxIdleConns(opt.maxIdleConn)
-	sqlDB.SetMaxOpenConns(opt.maxOpenConn)
-	sqlDB.SetConnMaxLifetime(opt.maxLifetime)
+	instance.SetMaxIdleConns(opt.maxIdleConn)
+	instance.SetMaxOpenConns(opt.maxOpenConn)
+	instance.SetConnMaxLifetime(opt.maxLifetime)
 	return db, nil
 }
