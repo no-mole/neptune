@@ -52,18 +52,15 @@ func New(ctx context.Context) *App {
 	app.command = &cobra.Command{
 		Version: DefaultVersion,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			app.listenSigns()
 			defer func() {
 				//reset version
 				app.command.Version = app.Version
 			}()
-			for _, plg := range app.plugins {
-				app.command.AddCommand(plg.Command())
-			}
 			//init app config for flags and env
-			return app.initConfig()
-		},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+			err := app.initConfig()
+			if err != nil {
+				return err
+			}
 			//plugin init
 			for _, plg := range app.plugins {
 				err := app.initPlugin(plg)
@@ -100,6 +97,10 @@ func New(ctx context.Context) *App {
 }
 
 func (app *App) Run() error {
+	app.listenSigns()
+	for _, plg := range app.plugins {
+		app.command.AddCommand(plg.Command())
+	}
 	return app.command.Execute()
 }
 
