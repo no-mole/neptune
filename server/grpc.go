@@ -20,7 +20,7 @@ type GrpcService struct {
 func NewGrpcServerPlugin(svr *grpc.Server, services ...GrpcService) application.Plugin {
 	plg := &GrpcServerPlugin{
 		Plugin: application.NewPluginConfig("grpc-server", &application.PluginConfigOptions{
-			ConfigName: "app",
+			ConfigName: "app.yaml",
 			ConfigType: "yaml",
 			EnvPrefix:  "",
 		}),

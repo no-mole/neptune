@@ -34,7 +34,7 @@ type Plugin struct {
 	config *Config
 }
 
-func (p *Plugin) Config(ctx context.Context, conf []byte) error {
+func (p *Plugin) Config(_ context.Context, conf []byte) error {
 	return yaml.Unmarshal(conf, p.config)
 }
 

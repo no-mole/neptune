@@ -13,7 +13,7 @@ import (
 func NewHttpServerPlugin(handler http.Handler) application.Plugin {
 	plg := &HttpServerPlugin{
 		Plugin: application.NewPluginConfig("http-server", &application.PluginConfigOptions{
-			ConfigName: "app",
+			ConfigName: "app.yaml",
 			ConfigType: "yaml",
 			EnvPrefix:  "",
 		}),
