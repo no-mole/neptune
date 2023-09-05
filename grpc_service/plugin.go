@@ -7,7 +7,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/no-mole/neptune/application"
 	"github.com/no-mole/neptune/config"
-	"github.com/spf13/cobra"
+	"github.com/no-mole/neptune/logger"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"gopkg.in/yaml.v3"
 	"strconv"
@@ -23,13 +23,12 @@ func NewPlugin(_ context.Context) application.Plugin {
 		}),
 		config: &config.Config{},
 	}
-	plg.Command().PersistentFlags().StringVar(&plg.config.Type, "register-type", "", "config client type")
-	plg.Command().PersistentFlags().StringVar(&plg.config.Endpoints, "register-endpoints", "", "config client endpoints")
-	plg.Command().PersistentFlags().StringVar(&plg.config.Namespace, "register-namespace", "", "config client namespace")
-	plg.Command().PersistentFlags().StringVar(&plg.config.Username, "register-username", "", "config client username")
-	plg.Command().PersistentFlags().StringVar(&plg.config.Password, "register-password", "", "config client password")
-	plg.Command().PersistentFlags().StringToStringVar(&plg.config.Settings, "register-settings", nil, "config client settings")
-
+	plg.Flags().StringVar(&plg.config.Type, "register-type", "", "config client type")
+	plg.Flags().StringVar(&plg.config.Endpoints, "register-endpoints", "", "config client endpoints")
+	plg.Flags().StringVar(&plg.config.Namespace, "register-namespace", "", "config client namespace")
+	plg.Flags().StringVar(&plg.config.Username, "register-username", "", "config client username")
+	plg.Flags().StringVar(&plg.config.Password, "register-password", "", "config client password")
+	plg.Flags().StringToStringVar(&plg.config.Settings, "register-settings", nil, "config client settings")
 	return plg
 }
 
@@ -38,24 +37,25 @@ type Plugin struct {
 	config *config.Config
 }
 
-func (p *Plugin) Init(_ context.Context, config []byte) error {
-	err := yaml.Unmarshal(config, p.config)
-	if err != nil {
-		return err
+func (p *Plugin) Config(ctx context.Context, conf []byte) error {
+	return yaml.Unmarshal(conf, p.config)
+}
+
+func (p *Plugin) Init(ctx context.Context) error {
+	logger.Info(
+		ctx,
+		"config center plugin init",
+		logger.WithField("grpcRegisterType", p.config.Type),
+		logger.WithField("grpcRegisterEndpoints", p.config.Endpoints),
+		logger.WithField("grpcRegisterNamespace", p.config.Namespace),
+		logger.WithField("grpcRegisterUsername", p.config.Username),
+		logger.WithField("grpcRegisterSettings", p.config.Settings),
+	)
+	initFn, ok := registryClientTypes[p.config.Type]
+	if !ok {
+		return fmt.Errorf("unsupported register type:[%s]", p.config.Type)
 	}
-	p.Command().RunE = func(cmd *cobra.Command, args []string) error {
-		initFn, ok := registryClientTypes[p.config.Type]
-		if !ok {
-			return fmt.Errorf("unsupported register type:[%s]", p.config.Type)
-		}
-		return initFn(context.Background(), p.config)
-	}
-	err = p.Command().Execute()
-	if err != nil {
-		return err
-	}
-	p.Command().RunE = func(cmd *cobra.Command, args []string) error { return nil }
-	return nil
+	return initFn(context.Background(), p.config)
 }
 
 type InitRegisterFunc func(ctx context.Context, conf *config.Config) error
@@ -83,7 +83,7 @@ func init() {
 			}
 		}
 		SetDefaultRegister(NewEtcdRegister(ctx, cli, ttl))
-		RegisterEtcdResolverBuilder(ctx, cli, ttl)
+		RegisterEtcdResolverBuilder(ctx, cli)
 		return nil
 	})
 	RegistryClientType("nacos", func(ctx context.Context, conf *config.Config) error {

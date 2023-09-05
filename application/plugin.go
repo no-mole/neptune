@@ -2,13 +2,16 @@ package application
 
 import (
 	"context"
-	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type Plugin interface {
-	Command() *cobra.Command
+	Name() string
+	Flags() *pflag.FlagSet
 	ConfigOptions() *PluginConfigOptions
-	Init(ctx context.Context, config []byte) error
+	Config(ctx context.Context, config []byte) error
+	Init(ctx context.Context) error
+	Run(ctx context.Context) error
 }
 
 type PluginConfigOptions struct {
@@ -20,25 +23,36 @@ type PluginConfigOptions struct {
 
 func NewPluginConfig(name string, opts *PluginConfigOptions) Plugin {
 	return &basicPlugin{
-		command: &cobra.Command{
-			Use: name,
-			//GroupID: name,
-		},
-		opts: opts,
+		name:  name,
+		flags: pflag.NewFlagSet(name, pflag.ContinueOnError),
+		opts:  opts,
 	}
 }
 
 type basicPlugin struct {
-	command *cobra.Command
-	opts    *PluginConfigOptions
+	name  string
+	flags *pflag.FlagSet
+	opts  *PluginConfigOptions
 }
 
-func (b *basicPlugin) Init(_ context.Context, _ []byte) error {
+func (b *basicPlugin) Config(_ context.Context, _ []byte) error {
 	return nil
 }
 
-func (b *basicPlugin) Command() *cobra.Command {
-	return b.command
+func (b *basicPlugin) Init(ctx context.Context) error {
+	return nil
+}
+
+func (b *basicPlugin) Run(_ context.Context) error {
+	return nil
+}
+
+func (b *basicPlugin) Name() string {
+	return b.name
+}
+
+func (b *basicPlugin) Flags() *pflag.FlagSet {
+	return b.flags
 }
 
 func (b *basicPlugin) ConfigOptions() *PluginConfigOptions {

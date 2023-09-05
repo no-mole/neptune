@@ -1,35 +1,33 @@
-package implementation
+package config
 
 import (
 	"context"
 	"fmt"
-	"github.com/no-mole/neptune/config"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var RegistryImplementationTypeNameEtcd = "etcd"
 
 func init() {
-	config.RegistryImplementation(RegistryImplementationTypeNameEtcd, func(ctx context.Context) config.Client {
+	RegistryImplementation(RegistryImplementationTypeNameEtcd, func(ctx context.Context) Client {
 		return &EtcdConfigClient{}
 	})
 }
 
 var (
-	_ config.Client = &EtcdConfigClient{} //ensure EtcdConfigClient Implementation Client
-
+	_ Client = &EtcdConfigClient{} //ensure EtcdConfigClient Implementation Client
 )
 
 type EtcdConfigClient struct {
-	config  *config.Config
+	config  *Config
 	client  *clientv3.Client
 	closeCh chan struct{}
 }
 
-func (s *EtcdConfigClient) Init(ctx context.Context, conf *config.Config) error {
+func (s *EtcdConfigClient) Init(ctx context.Context, conf *Config) error {
 	s.config = conf
 
-	clientConf := config.Trans2EtcdConfig(ctx, conf)
+	clientConf := Trans2EtcdConfig(ctx, conf)
 
 	cli, err := clientv3.New(clientConf)
 	if err != nil {
@@ -49,7 +47,7 @@ func (s *EtcdConfigClient) Set(ctx context.Context, key, value string) error {
 	return err
 }
 
-func (s *EtcdConfigClient) Get(ctx context.Context, key string) (*config.Item, error) {
+func (s *EtcdConfigClient) Get(ctx context.Context, key string) (*Item, error) {
 	resp, err := s.client.Get(ctx, s.genKey(key))
 	if err != nil {
 		return nil, err
@@ -60,7 +58,7 @@ func (s *EtcdConfigClient) Get(ctx context.Context, key string) (*config.Item, e
 	} else {
 		value = string(resp.Kvs[0].Value)
 	}
-	return config.NewItem(s.config.Namespace, key, value), nil
+	return NewItem(s.config.Namespace, key, value), nil
 }
 
 func (s *EtcdConfigClient) Exist(ctx context.Context, key string) (bool, error) {
@@ -71,7 +69,7 @@ func (s *EtcdConfigClient) Exist(ctx context.Context, key string) (bool, error) 
 	return len(resp.Kvs) != 0, nil
 }
 
-func (s *EtcdConfigClient) Watch(ctx context.Context, item *config.Item, callback func(item *config.Item)) error {
+func (s *EtcdConfigClient) Watch(ctx context.Context, item *Item, callback func(item *Item)) error {
 	if callback == nil {
 		return nil
 	}

@@ -72,7 +72,7 @@ func (i *Item) GetValue() string {
 
 var defaultClient Client
 
-func Init(ctx context.Context, config *Config) error {
+func InitDefaultClient(ctx context.Context, config *Config) error {
 	impl, err := GetClientImplementation(ctx, config.Type)
 	if err != nil {
 		return err
@@ -80,6 +80,7 @@ func Init(ctx context.Context, config *Config) error {
 	defaultClient = impl
 	return impl.Init(ctx, config)
 }
+
 func Set(ctx context.Context, key, value string) error {
 	return defaultClient.Set(ctx, key, value)
 }

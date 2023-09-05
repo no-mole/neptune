@@ -15,7 +15,7 @@ import (
 const ResolverEtcdScheme = "neptune-etcd"
 
 // RegisterEtcdResolverBuilder 创建一个etcd解析器构建器，解析器schema为 ResolverEtcdScheme
-func RegisterEtcdResolverBuilder(ctx context.Context, client *clientv3.Client, ttl int64) resolver.Builder {
+func RegisterEtcdResolverBuilder(ctx context.Context, client *clientv3.Client) resolver.Builder {
 	builder := &EtcdResolverBuilder{
 		ctx:    ctx,
 		client: client,
@@ -41,15 +41,15 @@ func (e *EtcdResolverBuilder) Build(target resolver.Target, cc resolver.ClientCo
 	}
 	// keyPrefix = /namespace/zeus/zeus.proto/zeus.ZeusService/v1/
 	// Item register endpoint = /namespace/zeus/zeus.proto/zeus.ZeusService/v1/192.168.1.1:8888
-	instance := &etcdResolver{
+	newResolver := &etcdResolver{
 		ctx:    e.ctx,
 		client: e.client,
 		prefix: keyPrefix,
 		cc:     cc,
 		close:  make(chan struct{}),
 	}
-	instance.start()
-	return instance, nil
+	newResolver.start()
+	return newResolver, nil
 }
 
 type etcdResolver struct {

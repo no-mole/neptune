@@ -18,6 +18,10 @@ var (
 	errorDefaultRegisterNotSet = errors.New("default register not set")
 )
 
+func init() {
+	instance = &nop{}
+}
+
 func SetDefaultRegister(r RegisterInterface) {
 	instance = r
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/no-mole/neptune/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"golang.org/x/sync/errgroup"
 )
@@ -124,7 +123,6 @@ func (f *RabbitMQConsumer) Working(consumer Consumer) (err error) {
 	}
 	err = f.eg.Wait()
 	if err != nil {
-		logger.Error(f.ctx, "Working", err)
 		f.ErrChan <- err
 	}
 	return nil

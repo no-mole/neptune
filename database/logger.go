@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/no-mole/neptune/logger"
-	"github.com/no-mole/neptune/logger/entry"
+	"go.uber.org/zap"
 	grrmLogger "gorm.io/gorm/logger"
 	"time"
 )
 
-func NewLogger(fields ...entry.Field) grrmLogger.Interface {
+func NewLogger(fields ...zap.Field) grrmLogger.Interface {
 	return &Logger{Fields: fields}
 }
 
 type Logger struct {
-	Fields []entry.Field
+	Fields []zap.Field
 }
 
 func (l *Logger) LogMode(level grrmLogger.LogLevel) grrmLogger.Interface {
@@ -22,15 +22,15 @@ func (l *Logger) LogMode(level grrmLogger.LogLevel) grrmLogger.Interface {
 }
 
 func (l *Logger) Info(ctx context.Context, s string, i ...interface{}) {
-	logger.Info(ctx, "database", append([]entry.Field{logger.WithField("msg", fmt.Sprintf(s, i...))}, l.Fields...)...)
+	logger.Info(ctx, "database", append([]zap.Field{logger.WithField("msg", fmt.Sprintf(s, i...))}, l.Fields...)...)
 }
 
 func (l *Logger) Warn(ctx context.Context, s string, i ...interface{}) {
-	logger.Warning(ctx, "database", nil, append([]entry.Field{logger.WithField("msg", fmt.Sprintf(s, i...))}, l.Fields...)...)
+	logger.Warning(ctx, "database", nil, append([]zap.Field{logger.WithField("msg", fmt.Sprintf(s, i...))}, l.Fields...)...)
 }
 
 func (l *Logger) Error(ctx context.Context, s string, i ...interface{}) {
-	logger.Error(ctx, "database", nil, append([]entry.Field{logger.WithField("msg", fmt.Sprintf(s, i...))}, l.Fields...)...)
+	logger.Error(ctx, "database", nil, append([]zap.Field{logger.WithField("msg", fmt.Sprintf(s, i...))}, l.Fields...)...)
 }
 
 func (l *Logger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
@@ -42,7 +42,7 @@ func (l *Logger) Trace(ctx context.Context, begin time.Time, fc func() (sql stri
 	logger.Info(
 		ctx,
 		"database",
-		append([]entry.Field{
+		append([]zap.Field{
 			logger.WithField("sql", sql),
 			logger.WithField("rows", rows),
 			logger.WithField("msg", errMsg),

@@ -2,44 +2,31 @@ package logger
 
 import (
 	"context"
-
-	"github.com/no-mole/neptune/logger/level"
-
-	"github.com/no-mole/neptune/logger/entry"
-
-	"github.com/no-mole/neptune/logger/dispatcher"
+	"go.uber.org/zap"
 )
 
 type Logger interface {
-	Fatal(ctx context.Context, tag string, err error, fields ...entry.Field)
+	Fatal(ctx context.Context, msg string, err error, fields ...zap.Field)
 
-	Error(ctx context.Context, tag string, err error, fields ...entry.Field)
+	Error(ctx context.Context, msg string, err error, fields ...zap.Field)
 
-	Warning(ctx context.Context, tag string, err error, fields ...entry.Field)
+	Warning(ctx context.Context, msg string, err error, fields ...zap.Field)
 
-	Info(ctx context.Context, tag string, fields ...entry.Field)
+	Info(ctx context.Context, msg string, fields ...zap.Field)
 
-	Notice(ctx context.Context, tag string, fields ...entry.Field)
+	Notice(ctx context.Context, msg string, fields ...zap.Field)
 
-	Debug(ctx context.Context, tag string, fields ...entry.Field)
+	Debug(ctx context.Context, msg string, fields ...zap.Field)
 
-	Trace(ctx context.Context, tag string, fields ...entry.Field)
+	Trace(ctx context.Context, msg string, fields ...zap.Field)
 
-	SetLevel(level.Level)
+	SetLevel(Level)
 
-	Flush()
-
-	AddDispatcher(dispatchers ...dispatcher.Dispatcher)
-
-	AddHandle(ctx context.Context, handle Handle)
-
-	Stop()
+	Handle(ctx context.Context, handle Handle)
 }
 
-type Handle func(ctx context.Context, e entry.Entry) []entry.Field
+type Handle func(ctx context.Context, lvl Level, msg string, err error, fields ...zap.Field) []zap.Field
 
-func WithField(key string, value interface{}) entry.Field {
-	return func(e entry.Entry) {
-		e.WithField(key, value)
-	}
+func WithField(key string, value interface{}) zap.Field {
+	return zap.Any(key, value)
 }

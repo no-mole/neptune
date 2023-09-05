@@ -4,29 +4,28 @@ import (
 	"context"
 	"errors"
 	"github.com/no-mole/neptune/application"
-	"github.com/spf13/cobra"
+	"github.com/no-mole/neptune/logger"
 	"gopkg.in/yaml.v3"
 )
 
 // NewConfigCenterPlugin 配置中心组件
 func NewConfigCenterPlugin() application.Plugin {
 	configOpts := &application.PluginConfigOptions{
-		ConfigName: "config",
+		ConfigName: "config.yaml",
 		ConfigType: "yaml",
-		EnvPrefix:  "config",
+		EnvPrefix:  "",
 	}
 	plg := &Plugin{
-		Plugin: application.NewPluginConfig("config", configOpts),
+		Plugin: application.NewPluginConfig("config-center", configOpts),
 		config: &Config{},
 	}
 
-	plg.Command().PersistentFlags().StringVar(&plg.config.Type, "config-type", "", "config client type")
-	plg.Command().PersistentFlags().StringVar(&plg.config.Endpoints, "config-endpoints", "", "config client endpoints")
-	plg.Command().PersistentFlags().StringVar(&plg.config.Namespace, "config-namespace", "", "config client namespace")
-	plg.Command().PersistentFlags().StringVar(&plg.config.Username, "config-username", "", "config client username")
-	plg.Command().PersistentFlags().StringVar(&plg.config.Password, "config-password", "", "config client password")
-	plg.Command().PersistentFlags().StringToStringVar(&plg.config.Settings, "config-settings", nil, "config client settings")
-
+	plg.Flags().StringVar(&plg.config.Type, "config-type", "", "config client type")
+	plg.Flags().StringVar(&plg.config.Endpoints, "config-endpoints", "", "config client endpoints")
+	plg.Flags().StringVar(&plg.config.Namespace, "config-namespace", "", "config client namespace")
+	plg.Flags().StringVar(&plg.config.Username, "config-username", "", "config client username")
+	plg.Flags().StringVar(&plg.config.Password, "config-password", "", "config client password")
+	plg.Flags().StringToStringVar(&plg.config.Settings, "config-settings", nil, "config client settings")
 	return plg
 }
 
@@ -35,21 +34,22 @@ type Plugin struct {
 	config *Config
 }
 
-func (p *Plugin) Init(_ context.Context, conf []byte) error {
-	err := yaml.Unmarshal(conf, p.config)
-	if err != nil {
-		return err
+func (p *Plugin) Config(ctx context.Context, conf []byte) error {
+	return yaml.Unmarshal(conf, p.config)
+}
+
+func (p *Plugin) Init(ctx context.Context) error {
+	logger.Info(
+		ctx,
+		"config center plugin init",
+		logger.WithField("configCenterType", p.config.Type),
+		logger.WithField("configCenterEndpoints", p.config.Endpoints),
+		logger.WithField("configCenterNamespace", p.config.Namespace),
+		logger.WithField("configCenterUsername", p.config.Username),
+		logger.WithField("configCenterSettings", p.config.Settings),
+	)
+	if p.config.Type == "" {
+		return errors.New("config plugin used but not initialization")
 	}
-	p.Command().RunE = func(cmd *cobra.Command, args []string) error {
-		if p.config.Type == "" {
-			return errors.New("config plugin used but not initialization")
-		}
-		return Init(context.Background(), p.config)
-	}
-	err = p.Command().Execute()
-	if err != nil {
-		return err
-	}
-	p.Command().RunE = func(cmd *cobra.Command, args []string) error { return nil }
-	return nil
+	return InitDefaultClient(context.Background(), p.config)
 }

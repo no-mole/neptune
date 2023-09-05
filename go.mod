@@ -1,6 +1,6 @@
 module github.com/no-mole/neptune
 
-go 1.20
+go 1.21
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
