@@ -1,0 +1,27 @@
+package main
+
+import (
+	"context"
+	"github.com/no-mole/neptune/application"
+	"github.com/no-mole/neptune/config"
+	"github.com/no-mole/neptune/grpc_service"
+	"{{.ModName}}/boot"
+)
+
+func main() {
+	ctx := context.Background()
+	app := application.New(ctx)
+	app.Use(
+		config.NewConfigCenterPlugin(),
+		grpc_service.NewPlugin(ctx),
+		boot.GrpcServer(ctx),
+		boot.HttpServer(ctx),
+	)
+	app.Hook(
+		boot.Dialer(ctx),
+	)
+	err := app.Run()
+	if err != nil {
+		panic(err)
+	}
+}

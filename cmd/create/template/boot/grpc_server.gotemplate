@@ -1,0 +1,26 @@
+package boot
+
+import (
+	"context"
+	"github.com/no-mole/neptune/application"
+	middleware "github.com/no-mole/neptune/middlewares"
+	barPb "github.com/no-mole/neptune/protos/bar"
+	"github.com/no-mole/neptune/server"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"{{.ModName}}/service/bar"
+)
+
+// GrpcServer grpc server组件，启动server并且注册服务
+func GrpcServer(_ context.Context) application.Plugin {
+	svr := grpc.NewServer(
+		grpc.Creds(insecure.NewCredentials()),
+		middleware.OtelGrpcUnaryServerInterceptor(),
+		middleware.OtelGrpcStreamServerInterceptor(),
+	)
+	grpcServerPlg := server.NewGrpcServerPlugin(
+		svr,
+		server.GrpcService{Metadata: barPb.Metadata, Impl: &bar.Service{}},
+	)
+	return grpcServerPlg
+}

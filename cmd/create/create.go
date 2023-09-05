@@ -14,7 +14,7 @@ import (
 	"github.com/no-mole/neptune/utils"
 )
 
-//go:embed template template/.env.example template/.gitignore template/.gitlab-ci.yml
+//go:embed template
 var tpls embed.FS
 
 // Warp cmd.run().

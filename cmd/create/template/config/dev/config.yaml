@@ -1,0 +1,5 @@
+type: nacos
+namespace: namespace
+endpoints: http://host:port/nacos
+username: username
+password: password

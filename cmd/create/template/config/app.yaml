@@ -1,0 +1,4 @@
+mode: dev
+logLevel: info
+http-endpoint: 0.0.0.0:8080
+grpc-endpoint: 0.0.0.0:8081
