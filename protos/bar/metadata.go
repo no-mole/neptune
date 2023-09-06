@@ -1,13 +1,5 @@
 package bar
 
-import (
-	"github.com/no-mole/neptune/registry"
-)
+import "github.com/no-mole/neptune/grpc_service"
 
-func Metadata() *registry.Metadata {
-	return &registry.Metadata{
-		ServiceDesc: Service_ServiceDesc,
-		Namespace:   "neptune",
-		Version:     "v1",
-	}
-}
+var Metadata = grpc_service.NewServiceMetadata(&Service_ServiceDesc, "neptune", "v1")

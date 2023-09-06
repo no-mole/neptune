@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"bytes"
-	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"net/http"
@@ -17,7 +16,6 @@ import (
 	"github.com/no-mole/neptune/json"
 	"github.com/no-mole/neptune/logger"
 	"github.com/no-mole/neptune/output"
-	"github.com/no-mole/neptune/tracing"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -45,7 +43,7 @@ func (w *cacheWriter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
-func Cache(store cache.Cache, expire time.Duration) gin.HandlerFunc {
+func GinCache(store cache.Cache, expire time.Duration) gin.HandlerFunc {
 	sf := singleflight.Group{}
 
 	return func(ctx *gin.Context) {
@@ -114,7 +112,7 @@ func Cache(store cache.Cache, expire time.Duration) gin.HandlerFunc {
 				go func() {
 					//使用新context避免cancel
 					data, _ := json.Marshal(body)
-					_ = store.SetEx(tracing.WithContext(context.Background(), tracing.FromContextOrNew(ctx)), cacheKey, data, expire)
+					_ = store.SetEx(ctx, cacheKey, data, expire)
 				}()
 			}
 			//body 已经写入，无需再写，直接返回
