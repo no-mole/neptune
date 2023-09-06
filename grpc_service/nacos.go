@@ -247,7 +247,7 @@ func (n *NacosRegister) Unregister(_ context.Context, service Metadata, endpoint
 		return err
 	}
 	if !success {
-		return fmt.Errorf("naocs register: unregister service [%s] unsuccess in %s", service.UniqueKey())
+		return fmt.Errorf("naocs register: unregister service [%s] unsuccess", service.UniqueKey())
 	}
 	return nil
 }
