@@ -36,10 +36,7 @@ var Command = &cobra.Command{
 	├── service
 	│ └── bar
 	│     └── service.go    //implementation grpc interface
-	├── .env.example        //move to .env,mark envMode & envDebug，default mode=prod,debug=false
 	├── Dockerfile          //multi-stage construction
-	├── Makefile            //make image 
-	├── docker_build.sh     //or  sh ./docker_build.sh tag=v0.1
 	├── main.go 
 	└── go.mod
 `,
