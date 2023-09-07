@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
-	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
@@ -120,7 +119,7 @@ func New(ctx context.Context) *App {
 		},
 	}
 	app.command.PersistentFlags().StringVar(&app.Mode, "mode", AppModeProd, "app run mode for [prod|grey|test|dev]")
-	app.command.PersistentFlags().StringVar(&app.LogLevel, "log-level", slog.LevelInfo.String(), "slog level,default is info,[debug|info|warn|error]")
+	app.command.PersistentFlags().StringVar(&app.LogLevel, "log-level", logger.LevelInfo.String(), "slog level,default is info,[debug|info|warn|error]")
 	return app
 }
 
