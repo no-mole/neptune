@@ -102,7 +102,7 @@ func WithDebugLog(isDebug bool) OptionFunc {
 	}
 }
 
-func Init(dbName string, conf *Config, isDebug bool) error {
+func Init(dbName string, conf *Config) error {
 	err := conf.Validate()
 	if err != nil {
 		return err
@@ -111,7 +111,6 @@ func Init(dbName string, conf *Config, isDebug bool) error {
 	db, err := initDriver(conf,
 		WithMaxIdleConn(conf.MaxIdleConnes),
 		WithMaxOpenConn(conf.MaxOpenConnes),
-		WithDebugLog(isDebug),
 		WithMaxLifetime(time.Duration(conf.MaxLifetime)*time.Second),
 		WithPlugins(),
 	)
@@ -161,9 +160,7 @@ func initDriver(conf *Config, opts ...OptionFunc) (*gorm.DB, error) {
 		gormConf.Plugins[plugin.Name()] = plugin
 	}
 
-	if opt.DebugLog {
-		gormConf.Logger.LogMode(gormLogger.Info)
-	}
+	gormConf.Logger.LogMode(gormLogger.Info)
 
 	driver, ok := GetDriver(conf.Driver)
 	if !ok {

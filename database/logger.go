@@ -39,7 +39,7 @@ func (l *Logger) Trace(ctx context.Context, begin time.Time, fc func() (sql stri
 	if err != nil {
 		errMsg = err.Error()
 	}
-	logger.Info(
+	logger.Trace(
 		ctx,
 		"database",
 		append([]zap.Field{
