@@ -12,7 +12,7 @@ func main() {
 	ctx := context.Background()
 	app := application.New(ctx)
 	app.Use(
-		config.NewConfigCenterPlugin(),
+		config.NewConfigCenterPlugin(ctx),
 		grpc_service.NewPlugin(ctx),
 		boot.GrpcServer(ctx),
 		boot.HttpServer(ctx),
