@@ -15,23 +15,25 @@ import (
 const ResolverEtcdScheme = "neptune-etcd"
 
 // RegisterEtcdResolverBuilder 创建一个etcd解析器构建器，解析器schema为 ResolverEtcdScheme
-func RegisterEtcdResolverBuilder(ctx context.Context, client *clientv3.Client) resolver.Builder {
+func RegisterEtcdResolverBuilder(ctx context.Context, client *clientv3.Client, namespace string) resolver.Builder {
 	builder := &EtcdResolverBuilder{
-		ctx:    ctx,
-		client: client,
+		ctx:       ctx,
+		client:    client,
+		namespace: namespace,
 	}
 	resolver.Register(builder)
 	return builder
 }
 
 type EtcdResolverBuilder struct {
-	ctx    context.Context
-	client *clientv3.Client
+	ctx       context.Context
+	client    *clientv3.Client
+	namespace string
 }
 
 func (e *EtcdResolverBuilder) Build(target resolver.Target, cc resolver.ClientConn, _ resolver.BuildOptions) (resolver.Resolver, error) {
-	// "neptune-etcd:///namespace/zeus/zeus.proto/zeus.ZeusService/v1"
-	// target.Endpoints() = target.URL.Path = namespace/zeus/zeus.proto/zeus.ZeusService/v1
+	// "neptune-etcd:///zeus/zeus.proto/zeus.ZeusService/v1"
+	// target.Endpoints() = target.URL.Path = /zeus/zeus.proto/zeus.ZeusService/v1
 	keyPrefix := target.Endpoint()
 	if !strings.HasPrefix(keyPrefix, "/") {
 		keyPrefix = "/" + keyPrefix
@@ -39,6 +41,7 @@ func (e *EtcdResolverBuilder) Build(target resolver.Target, cc resolver.ClientCo
 	if !strings.HasSuffix(keyPrefix, "/") {
 		keyPrefix = keyPrefix + "/"
 	}
+	keyPrefix = fmt.Sprintf("/%s/%s", e.namespace, keyPrefix)
 	// keyPrefix = /namespace/zeus/zeus.proto/zeus.ZeusService/v1/
 	// Item register endpoint = /namespace/zeus/zeus.proto/zeus.ZeusService/v1/192.168.1.1:8888
 	newResolver := &etcdResolver{
@@ -118,20 +121,22 @@ func (e *etcdResolver) start() {
 }
 
 // NewEtcdRegister 创建一个etcd注册器
-func NewEtcdRegister(ctx context.Context, client *clientv3.Client, ttl int64) RegisterInterface {
+func NewEtcdRegister(ctx context.Context, client *clientv3.Client, namespace string, ttl int64) RegisterInterface {
 	return &EtcdRegister{
-		ctx:      ctx,
-		client:   client,
-		ttl:      ttl,
-		services: &RegisterServices{},
-		close:    make(chan struct{}),
+		ctx:       ctx,
+		client:    client,
+		namespace: namespace,
+		ttl:       ttl,
+		services:  &RegisterServices{},
+		close:     make(chan struct{}),
 	}
 }
 
 type EtcdRegister struct {
 	ctx context.Context
 
-	client *clientv3.Client
+	namespace string
+	client    *clientv3.Client
 
 	ttl int64
 
@@ -180,7 +185,7 @@ func (e *EtcdRegister) Unregister(ctx context.Context, service Metadata, endpoin
 }
 
 func (e *EtcdRegister) key(service Metadata, endpoint string) string {
-	return fmt.Sprintf("%s/%s", service.UniqueKey(), endpoint)
+	return fmt.Sprintf("/%s/%s/%s", e.namespace, service.UniqueKey(), endpoint)
 }
 
 func (e *EtcdRegister) value() string {

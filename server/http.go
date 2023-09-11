@@ -10,25 +10,26 @@ import (
 	"net/http"
 )
 
-func NewHttpServerPlugin(handler http.Handler) application.Plugin {
+func NewHttpServerPlugin(handlerFn func(ctx context.Context) http.Handler) application.Plugin {
 	plg := &HttpServerPlugin{
 		Plugin: application.NewPluginConfig("http-server", &application.PluginConfigOptions{
 			ConfigName: "app.yaml",
 			ConfigType: "yaml",
 			EnvPrefix:  "",
 		}),
-		handler: handler,
-		conf:    &HttpServerPluginConf{},
+		handlerFn: handlerFn,
+		conf:      &HttpServerPluginConf{},
 	}
-	plg.Flags().StringVar(&plg.conf.Endpoint, "http-endpoint", "0.0.0.0:8080", "http server endpoint,default is [0.0.0.0:8080]")
+	plg.Flags().StringVar(&plg.conf.Endpoint, "http-endpoint", "0.0.0.0:80", "http server endpoint,default is [0.0.0.0:80]")
 	return plg
 }
 
 type HttpServerPlugin struct {
 	application.Plugin `yaml:"-" json:"-"`
 
-	handler  http.Handler
-	listener net.Listener
+	handlerFn func(ctx context.Context) http.Handler
+	handler   http.Handler
+	listener  net.Listener
 
 	conf *HttpServerPluginConf
 }
@@ -60,6 +61,7 @@ func (h *HttpServerPlugin) Init(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	h.handler = h.handlerFn(ctx)
 	return nil
 }
 func (h *HttpServerPlugin) Run(ctx context.Context) error {

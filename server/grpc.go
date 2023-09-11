@@ -17,22 +17,19 @@ type GrpcService struct {
 	Impl     any
 }
 
-func NewGrpcServerPlugin(svr *grpc.Server, services ...GrpcService) application.Plugin {
+func NewGrpcServerPlugin(grpcServerFn func(ctx context.Context) *grpc.Server, services ...GrpcService) application.Plugin {
 	plg := &GrpcServerPlugin{
 		Plugin: application.NewPluginConfig("grpc-server", &application.PluginConfigOptions{
 			ConfigName: "app.yaml",
 			ConfigType: "yaml",
 			EnvPrefix:  "",
 		}),
+		fn:       grpcServerFn,
 		services: services,
-		server:   svr,
 		err:      make(chan error, 1),
 		conf:     &GrpcServerPluginConf{},
 	}
-	for _, service := range services {
-		svr.RegisterService(service.Metadata.ServiceDesc(), service.Impl)
-	}
-	plg.Flags().StringVar(&plg.conf.GrpcListen, "grpc-endpoint", "0.0.0.0:8081", "grpc监听地址,默认为 [0.0.0.0:8081]")
+	plg.Flags().StringVar(&plg.conf.GrpcListen, "grpc-endpoint", "0.0.0.0:8080", "grpc监听地址,默认为 [0.0.0.0:8080]")
 	plg.Flags().StringVar(&plg.conf.ServiceEndpoint, "service-endpoint", "", "服务注册使用的地址，从环境变量中取或者取第一个非回环ip [ip:port]")
 	return plg
 }
@@ -40,6 +37,7 @@ func NewGrpcServerPlugin(svr *grpc.Server, services ...GrpcService) application.
 type GrpcServerPlugin struct {
 	application.Plugin `yaml:"-"`
 
+	fn       func(ctx context.Context) *grpc.Server
 	server   *grpc.Server `yaml:"-"`
 	listener net.Listener `yaml:"-"`
 
@@ -96,6 +94,11 @@ func (g *GrpcServerPlugin) Init(ctx context.Context) error {
 		return err
 	}
 	g.listener = listener
+
+	g.server = g.fn(ctx)
+	for _, service := range g.services {
+		g.server.RegisterService(service.Metadata.ServiceDesc(), service.Impl)
+	}
 	go func() {
 		g.err <- g.server.Serve(g.listener)
 	}()

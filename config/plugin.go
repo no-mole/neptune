@@ -9,7 +9,7 @@ import (
 )
 
 // NewConfigCenterPlugin 配置中心组件
-func NewConfigCenterPlugin() application.Plugin {
+func NewConfigCenterPlugin(_ context.Context) application.Plugin {
 	configOpts := &application.PluginConfigOptions{
 		ConfigName: "config.yaml",
 		ConfigType: "yaml",
@@ -52,4 +52,9 @@ func (p *Plugin) Init(ctx context.Context) error {
 		return errors.New("config plugin used but not initialization")
 	}
 	return InitDefaultClient(context.Background(), p.config)
+}
+
+func (p *Plugin) Run(ctx context.Context) error {
+	<-ctx.Done()
+	return defaultClient.Close()
 }

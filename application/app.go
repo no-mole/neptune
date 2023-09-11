@@ -118,7 +118,7 @@ func New(ctx context.Context) *App {
 			return eg.Wait()
 		},
 	}
-	app.command.PersistentFlags().StringVar(&app.Mode, "mode", AppModeProd, "app run mode for [prod|grey|test|dev]")
+	app.command.PersistentFlags().StringVar(&app.Mode, "mode", AppModeDev, "app run mode for [prod|grey|test|dev],default is dev")
 	app.command.PersistentFlags().StringVar(&app.LogLevel, "log-level", logger.LevelInfo.String(), "slog level,default is info,[debug|info|warn|error]")
 	return app
 }

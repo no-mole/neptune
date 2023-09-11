@@ -14,13 +14,9 @@ type RegisterInterface interface {
 }
 
 var (
-	instance                   RegisterInterface
-	errorDefaultRegisterNotSet = errors.New("default register not set")
+	instance                   RegisterInterface = &nop{}
+	errorDefaultRegisterNotSet                   = errors.New("default register not set")
 )
-
-func init() {
-	instance = &nop{}
-}
 
 func SetDefaultRegister(r RegisterInterface) {
 	instance = r
@@ -83,23 +79,20 @@ func (e *ServiceInfo) IsEmpty() bool {
 type Metadata interface {
 	ServiceDesc() *grpc.ServiceDesc
 	Version() string
-	Namespace() string
 	UniqueKey() string
 }
 
 var _ Metadata = &metadata{}
 
-func NewServiceMetadata(sd *grpc.ServiceDesc, svcNamespace, svcVersion string) Metadata {
+func NewServiceMetadata(sd *grpc.ServiceDesc, svcVersion string) Metadata {
 	return &metadata{
 		sd:        sd,
 		version:   svcVersion,
-		namespace: svcNamespace,
-		uniqueKey: fmt.Sprintf("/%s/%s/%s/%s", svcNamespace, sd.Metadata, sd.ServiceName, svcVersion),
+		uniqueKey: fmt.Sprintf("/%s/%s/%s", sd.Metadata, sd.ServiceName, svcVersion),
 	}
 }
 
 type metadata struct {
-	namespace string
 	sd        *grpc.ServiceDesc
 	version   string
 	uniqueKey string
@@ -111,10 +104,6 @@ func (m *metadata) ServiceDesc() *grpc.ServiceDesc {
 
 func (m *metadata) Version() string {
 	return m.version
-}
-
-func (m *metadata) Namespace() string {
-	return m.namespace
 }
 
 func (m *metadata) UniqueKey() string {

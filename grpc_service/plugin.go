@@ -19,7 +19,7 @@ func NewPlugin(_ context.Context) application.Plugin {
 		Plugin: application.NewPluginConfig("grpc-register", &application.PluginConfigOptions{
 			ConfigName: "register",
 			ConfigType: "yaml",
-			EnvPrefix:  "register",
+			EnvPrefix:  "",
 		}),
 		config: &config.Config{},
 	}
@@ -57,6 +57,10 @@ func (p *Plugin) Init(ctx context.Context) error {
 	}
 	return initFn(context.Background(), p.config)
 }
+func (p *Plugin) Run(ctx context.Context) error {
+	<-ctx.Done()
+	return Close()
+}
 
 type InitRegisterFunc func(ctx context.Context, conf *config.Config) error
 
@@ -82,8 +86,8 @@ func init() {
 				ttl = int64(ttlInt)
 			}
 		}
-		SetDefaultRegister(NewEtcdRegister(ctx, cli, ttl))
-		RegisterEtcdResolverBuilder(ctx, cli)
+		SetDefaultRegister(NewEtcdRegister(ctx, cli, conf.Namespace, ttl))
+		RegisterEtcdResolverBuilder(ctx, cli, conf.Namespace)
 		return nil
 	})
 	RegistryClientType("nacos", func(ctx context.Context, conf *config.Config) error {
