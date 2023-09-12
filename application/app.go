@@ -176,6 +176,10 @@ func (app *App) listenSigns() {
 }
 
 func (app *App) pluginConfigInit(plg Plugin) error {
+	if plg.ConfigOptions().ConfigName == "" && plg.ConfigOptions().ConfigFile == "" {
+		return nil
+	}
+
 	v := viper.New()
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config")
