@@ -17,7 +17,7 @@ import (
 func NewPlugin(_ context.Context) application.Plugin {
 	plg := &Plugin{
 		Plugin: application.NewPluginConfig("grpc-register", &application.PluginConfigOptions{
-			ConfigName: "register",
+			ConfigName: "register.yaml",
 			ConfigType: "yaml",
 			EnvPrefix:  "",
 		}),
