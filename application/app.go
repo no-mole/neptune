@@ -3,6 +3,11 @@ package application
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+
 	"github.com/no-mole/neptune/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -10,10 +15,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
 )
 
 type HookFunc func(ctx context.Context) error
@@ -176,6 +177,10 @@ func (app *App) listenSigns() {
 }
 
 func (app *App) pluginConfigInit(plg Plugin) error {
+	if plg.ConfigOptions().ConfigName == "" && plg.ConfigOptions().ConfigFile == "" {
+		return nil
+	}
+
 	v := viper.New()
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config")
