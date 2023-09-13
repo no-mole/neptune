@@ -27,11 +27,9 @@ var DefaultDialOptions = []grpc.DialOption{
 var clientConnMapper = map[string]*grpc.ClientConn{}
 
 func DialContext(ctx context.Context, opts []grpc.DialOption, scheme string, mds ...grpc_service.Metadata) error {
-	newOpts := make([]grpc.DialOption, 0, len(DefaultDialOptions)+len(opts))
-	newOpts = append(newOpts, DefaultDialOptions...)
-	newOpts = append(newOpts, opts...)
+	opts = mergeDialOpts(DefaultDialOptions, opts)
 	for _, md := range mds {
-		cc, err := grpc.DialContext(ctx, fmt.Sprintf("%s://%s", scheme, md.UniqueKey()), newOpts...)
+		cc, err := grpc.DialContext(ctx, fmt.Sprintf("%s://%s", scheme, md.UniqueKey()), opts...)
 		if err != nil {
 			return err
 		}
@@ -40,10 +38,29 @@ func DialContext(ctx context.Context, opts []grpc.DialOption, scheme string, mds
 	return nil
 }
 
-func Call(service grpc_service.Metadata, cb func(*grpc.ClientConn) error) error {
-	cc, ok := clientConnMapper[service.UniqueKey()]
+func DialContextEndpoint(ctx context.Context, opts []grpc.DialOption, endpoint string, mds ...grpc_service.Metadata) error {
+	opts = mergeDialOpts(DefaultDialOptions, opts)
+	cc, err := grpc.DialContext(ctx, endpoint, opts...)
+	if err != nil {
+		return err
+	}
+	for _, md := range mds {
+		clientConnMapper[md.UniqueKey()] = cc
+	}
+	return nil
+}
+
+func Call(md grpc_service.Metadata, cb func(*grpc.ClientConn) error) error {
+	cc, ok := clientConnMapper[md.UniqueKey()]
 	if !ok {
-		return fmt.Errorf("no client conn for service [%s]", service.UniqueKey())
+		return fmt.Errorf("no client conn for md [%s]", md.UniqueKey())
 	}
 	return cb(cc)
+}
+
+func mergeDialOpts(opts1, opts2 []grpc.DialOption) []grpc.DialOption {
+	newOpts := make([]grpc.DialOption, 0, len(opts1)+len(opts2))
+	newOpts = append(newOpts, DefaultDialOptions...)
+	newOpts = append(newOpts, opts2...)
+	return newOpts
 }
