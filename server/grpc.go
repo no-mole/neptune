@@ -94,17 +94,16 @@ func (g *GrpcServerPlugin) Init(ctx context.Context) error {
 		return err
 	}
 	g.listener = listener
-
-	g.server = g.fn(ctx)
-	for _, service := range g.services {
-		g.server.RegisterService(service.Metadata.ServiceDesc(), service.Impl)
-	}
-	go func() {
-		g.err <- g.server.Serve(g.listener)
-	}()
 	return nil
 }
 func (g *GrpcServerPlugin) Run(ctx context.Context) error {
+	g.server = g.fn(ctx)
+	go func() {
+		g.err <- g.server.Serve(g.listener)
+	}()
+	for _, service := range g.services {
+		g.server.RegisterService(service.Metadata.ServiceDesc(), service.Impl)
+	}
 	for _, service := range g.services {
 		err := grpc_service.Register(context.Background(), g.ep, service.Metadata)
 		if err != nil {

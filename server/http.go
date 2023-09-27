@@ -61,10 +61,10 @@ func (h *HttpServerPlugin) Init(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	h.handler = h.handlerFn(ctx)
 	return nil
 }
 func (h *HttpServerPlugin) Run(ctx context.Context) error {
+	h.handler = h.handlerFn(ctx)
 	logger.Info(
 		ctx,
 		"http server started",
