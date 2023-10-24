@@ -6,6 +6,7 @@ import (
 	"github.com/go-redis/redis/extra/redisotel/v8"
 	"github.com/go-redis/redis/v8"
 	"go.opentelemetry.io/otel/attribute"
+	"gopkg.in/yaml.v3"
 	"sync"
 )
 
@@ -27,19 +28,14 @@ type Config struct {
 	Password string `json:"password" yaml:"password" validate:"required"`
 }
 
-func Init(redisName string, confStr string) error {
-	redisConf := &Config{}
-	err := json.Unmarshal([]byte(confStr), redisConf)
-	if err != nil {
-		return err
-	}
+func InitWithConfig(redisName string, redisConf *Config) error {
 	curClient := redis.NewClient(&redis.Options{
 		Addr:     redisConf.Host,
 		Password: redisConf.Password, // no password set
 		DB:       redisConf.Database, // use default DB
 	})
 	// 发送一个ping命令,测试是否通
-	_, err = curClient.Ping(context.Background()).Result()
+	_, err := curClient.Ping(context.Background()).Result()
 	if err != nil {
 		return err
 	}
@@ -54,6 +50,26 @@ func Init(redisName string, confStr string) error {
 	)
 	Client.StoreClient(redisName, curClient)
 	return nil
+}
+
+// InitYaml 初始化redis yaml config string
+func InitYaml(redisName string, confStr string) error {
+	redisConf := &Config{}
+	err := yaml.Unmarshal([]byte(confStr), redisConf)
+	if err != nil {
+		return err
+	}
+	return InitWithConfig(redisName, redisConf)
+}
+
+// Init 初始化redis json config string
+func Init(redisName string, confStr string) error {
+	redisConf := &Config{}
+	err := json.Unmarshal([]byte(confStr), redisConf)
+	if err != nil {
+		return err
+	}
+	return InitWithConfig(redisName, redisConf)
 }
 
 func (c *client) StoreClient(key string, value *redis.Client) {
