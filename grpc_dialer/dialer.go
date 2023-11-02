@@ -3,10 +3,11 @@ package grpc_dialer
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/no-mole/neptune/grpc_service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
-	"time"
 )
 
 const (
@@ -46,6 +47,13 @@ func DialContextEndpoint(ctx context.Context, opts []grpc.DialOption, endpoint s
 	}
 	for _, md := range mds {
 		clientConnMapper[md.UniqueKey()] = cc
+	}
+	return nil
+}
+
+func DialContextConn(conn *grpc.ClientConn, mds ...grpc_service.Metadata) error {
+	for _, md := range mds {
+		clientConnMapper[md.UniqueKey()] = conn
 	}
 	return nil
 }
