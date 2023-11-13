@@ -37,10 +37,17 @@ func InitRabbitMq(rabbitMqName string, confStr string) error {
 	mqConf := &Config{}
 	err := json.Unmarshal([]byte(confStr), mqConf)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	configMap[rabbitMqName] = mqConf
+	conn := getRabbitMqConn(mqConf)
+	Client.StoreClient(rabbitMqName, conn)
+	return nil
+}
 
+func InitRabbitMqWithConfig(rabbitMqName string, conf *Config) error {
+	mqConf := &Config{}
+	configMap[rabbitMqName] = mqConf
 	conn := getRabbitMqConn(mqConf)
 	Client.StoreClient(rabbitMqName, conn)
 	return nil
