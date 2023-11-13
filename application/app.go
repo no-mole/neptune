@@ -55,19 +55,7 @@ func New(ctx context.Context) *App {
 
 	app.command = &cobra.Command{
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			//init app config for flags and env
-			err := app.initConfig()
-			if err != nil {
-				return err
-			}
-			//init logger
-			conf := zap.NewProductionConfig()
-			conf.EncoderConfig.CallerKey = ""
-			conf.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
-			zapLogger, _ := conf.Build()
-			newLogger := logger.NewLogger(app.ctx, zapLogger)
-			newLogger.SetLevel(logger.GetLevelByName(app.LogLevel))
-			logger.SetLogger(newLogger)
+			var err error
 			logger.Info(app.ctx, "application pre run", logger.WithField("mode", app.Mode), logger.WithField("envPrefix", app.EnvPrefix))
 			//plugin init
 			for _, plg := range app.plugins {
@@ -121,6 +109,18 @@ func New(ctx context.Context) *App {
 	}
 	app.command.PersistentFlags().StringVar(&app.Mode, "mode", AppModeDev, "app run mode for [prod|grey|test|dev],default is dev")
 	app.command.PersistentFlags().StringVar(&app.LogLevel, "log-level", logger.LevelInfo.String(), "slog level,default is info,[debug|info|warn|error]")
+
+	//init app config for flags and env
+	app.initConfig()
+
+	//init logger
+	conf := zap.NewProductionConfig()
+	conf.EncoderConfig.CallerKey = ""
+	conf.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+	zapLogger, _ := conf.Build()
+	newLogger := logger.NewLogger(app.ctx, zapLogger)
+	newLogger.SetLevel(logger.GetLevelByName(app.LogLevel))
+	logger.SetLogger(newLogger)
 	return app
 }
 
@@ -146,7 +146,7 @@ func (app *App) Hook(hooks ...HookFunc) {
 	app.hooks = append(app.hooks, hooks...)
 }
 
-func (app *App) initConfig() error {
+func (app *App) initConfig() {
 	v := viper.New()
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config")
@@ -159,7 +159,6 @@ func (app *App) initConfig() error {
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	v.AutomaticEnv()
 	BindFlags(app.ctx, "app", app.command.Flags(), v)
-	return nil
 }
 
 func (app *App) listenSigns() {
