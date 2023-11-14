@@ -46,9 +46,8 @@ func InitRabbitMq(rabbitMqName string, confStr string) error {
 }
 
 func InitRabbitMqWithConfig(rabbitMqName string, conf *Config) error {
-	mqConf := &Config{}
-	configMap[rabbitMqName] = mqConf
-	conn := getRabbitMqConn(mqConf)
+	configMap[rabbitMqName] = conf
+	conn := getRabbitMqConn(conf)
 	Client.StoreClient(rabbitMqName, conn)
 	return nil
 }
