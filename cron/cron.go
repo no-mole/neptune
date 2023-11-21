@@ -2,7 +2,7 @@ package cron
 
 import (
 	"context"
-	"fmt"
+	"go.uber.org/zap"
 
 	"github.com/no-mole/neptune/logger"
 	"github.com/robfig/cron/v3"
@@ -34,11 +34,19 @@ type Job interface {
 type cronLogger struct{}
 
 func (l cronLogger) Info(msg string, keysAndValues ...interface{}) {
-	logger.Info(context.Background(), "crontab", logger.WithField("msg", fmt.Sprintf(msg, keysAndValues...)))
+	fields := []zap.Field{zap.Any("msg", msg)}
+	for i := 0; i < len(keysAndValues); i += 2 {
+		fields = append(fields, zap.Any(keysAndValues[i].(string), keysAndValues[i+1]))
+	}
+	logger.Info(context.Background(), "crontab", fields...)
 }
 
 func (l cronLogger) Error(err error, msg string, keysAndValues ...interface{}) {
-	logger.Error(context.Background(), "crontab", err, logger.WithField("msg", fmt.Sprintf(msg, keysAndValues...)))
+	fields := []zap.Field{zap.Any("msg", msg)}
+	for i := 0; i < len(keysAndValues); i += 2 {
+		fields = append(fields, zap.Any(keysAndValues[i].(string), keysAndValues[i+1]))
+	}
+	logger.Error(context.Background(), "crontab", err, fields...)
 }
 
 func New(opts ...Option) *Manger {
