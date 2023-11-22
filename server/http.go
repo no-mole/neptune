@@ -41,7 +41,7 @@ type HttpServerPluginConf struct {
 var ErrorEmptyHttpEndpoint = errors.New("http server plugin used but not initialization")
 
 func (h *HttpServerPlugin) Config(_ context.Context, conf []byte) error {
-	return yaml.Unmarshal(conf, h)
+	return yaml.Unmarshal(conf, h.conf)
 }
 
 func (h *HttpServerPlugin) Init(ctx context.Context) error {
