@@ -27,6 +27,7 @@ var DefaultDialOptions = []grpc.DialOption{
 }
 var clientConnMapper = map[string]*grpc.ClientConn{}
 
+// DialContext 根据metadata构建链接池
 func DialContext(ctx context.Context, opts []grpc.DialOption, scheme string, mds ...grpc_service.Metadata) error {
 	opts = mergeDialOpts(DefaultDialOptions, opts)
 	for _, md := range mds {
@@ -39,6 +40,27 @@ func DialContext(ctx context.Context, opts []grpc.DialOption, scheme string, mds
 	return nil
 }
 
+// DialContextConnection 根据metadata构建单个链接
+func DialContextConnection(ctx context.Context, opts []grpc.DialOption, scheme string, md grpc_service.Metadata) (*grpc.ClientConn, error) {
+	opts = mergeDialOpts(DefaultDialOptions, opts)
+	cc, err := grpc.DialContext(ctx, fmt.Sprintf("%s://%s", scheme, md.UniqueKey()), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return cc, nil
+}
+
+// DialContextEndpointConnection 使用固定端点构建链接
+func DialContextEndpointConnection(ctx context.Context, opts []grpc.DialOption, endpoint string) (*grpc.ClientConn, error) {
+	opts = mergeDialOpts(DefaultDialOptions, opts)
+	cc, err := grpc.DialContext(ctx, endpoint, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return cc, nil
+}
+
+// DialContextEndpoint 使用固定端点构建链接池
 func DialContextEndpoint(ctx context.Context, opts []grpc.DialOption, endpoint string, mds ...grpc_service.Metadata) error {
 	opts = mergeDialOpts(DefaultDialOptions, opts)
 	cc, err := grpc.DialContext(ctx, endpoint, opts...)
