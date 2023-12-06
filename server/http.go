@@ -35,7 +35,7 @@ type HttpServerPlugin struct {
 }
 
 type HttpServerPluginConf struct {
-	Endpoint string `json:"http_endpoint" yaml:"http_endpoint"`
+	Endpoint string `json:"http-endpoint" yaml:"http-endpoint"`
 }
 
 var ErrorEmptyHttpEndpoint = errors.New("http server plugin used but not initialization")

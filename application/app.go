@@ -213,15 +213,6 @@ func (app *App) pluginConfigInit(plg Plugin) error {
 
 func (app *App) pluginEnvBind(plg Plugin) error {
 	v := viper.New()
-
-	v.AddConfigPath(".")
-	v.AddConfigPath("./config")
-	v.AddConfigPath(fmt.Sprintf("./config/%s", app.Mode))
-
-	v.SetConfigFile(plg.ConfigOptions().ConfigFile)
-	v.SetConfigName(plg.ConfigOptions().ConfigName)
-	v.SetConfigType(plg.ConfigOptions().ConfigType)
-
 	//其次配置环境变量前缀 ${app_env_prefix}_${plugin_env_prefix}
 	envPrefix := app.EnvPrefix
 	if plg.ConfigOptions().EnvPrefix != "" {
@@ -244,11 +235,19 @@ func BindFlags(ctx context.Context, groupName string, set *pflag.FlagSet, v *vip
 		// Determine the naming convention of the flags when represented in the config file
 		configName := f.Name
 		// Apply the viper config value to the flag when the flag is not set and viper has a value
-		if !f.Changed && v.IsSet(configName) {
+		// 优先环境变量
+		if v.IsSet(configName) {
 			val := v.Get(configName)
 			err := set.Set(f.Name, fmt.Sprintf("%v", val))
 			if err != nil {
 				logger.Error(ctx, "bind flag error", err, logger.WithField("groupName", groupName), logger.WithField("flagName", f.Name), logger.WithField("setVal", val))
+			}
+		}
+		// use default
+		if !f.Changed {
+			err := set.Set(f.Name, f.DefValue)
+			if err != nil {
+				logger.Error(ctx, "bind flag error", err, logger.WithField("groupName", groupName), logger.WithField("flagName", f.Name), logger.WithField("setVal", f.DefValue))
 			}
 		}
 	}
