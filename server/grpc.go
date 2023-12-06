@@ -3,13 +3,14 @@ package server
 import (
 	"context"
 	"errors"
+	"net"
+
 	"github.com/no-mole/neptune/application"
 	"github.com/no-mole/neptune/grpc_service"
 	"github.com/no-mole/neptune/logger"
 	"github.com/no-mole/neptune/utils"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
-	"net"
 )
 
 type GrpcService struct {
@@ -51,7 +52,7 @@ type GrpcServerPlugin struct {
 }
 
 type GrpcServerPluginConf struct {
-	GrpcListen      string `yaml:"grpc_listen" json:"grpc_listen"`
+	GrpcListen      string `yaml:"grpc-endpoint" json:"grpc-endpoint"`
 	ServiceEndpoint string `yaml:"service_endpoint" json:"service_endpoint"`
 }
 

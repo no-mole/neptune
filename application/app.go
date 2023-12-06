@@ -188,7 +188,6 @@ func (app *App) pluginConfigInit(plg Plugin) error {
 	v.SetConfigFile(plg.ConfigOptions().ConfigFile)
 	v.SetConfigName(plg.ConfigOptions().ConfigName)
 	v.SetConfigType(plg.ConfigOptions().ConfigType)
-
 	opts := []zap.Field{logger.WithField("pluginName", plg.Name()), logger.WithField("pluginConfigOpts", plg.ConfigOptions())}
 
 	if err := v.ReadInConfig(); err != nil {
@@ -214,6 +213,15 @@ func (app *App) pluginConfigInit(plg Plugin) error {
 
 func (app *App) pluginEnvBind(plg Plugin) error {
 	v := viper.New()
+
+	v.AddConfigPath(".")
+	v.AddConfigPath("./config")
+	v.AddConfigPath(fmt.Sprintf("./config/%s", app.Mode))
+
+	v.SetConfigFile(plg.ConfigOptions().ConfigFile)
+	v.SetConfigName(plg.ConfigOptions().ConfigName)
+	v.SetConfigType(plg.ConfigOptions().ConfigType)
+
 	//其次配置环境变量前缀 ${app_env_prefix}_${plugin_env_prefix}
 	envPrefix := app.EnvPrefix
 	if plg.ConfigOptions().EnvPrefix != "" {
