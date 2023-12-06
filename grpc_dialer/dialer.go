@@ -12,10 +12,10 @@ import (
 
 const (
 	// KeepAliveTime 在此时间后客户端没看到任何活动，将ping服务器
-	KeepAliveTime = time.Duration(10) * time.Second
+	KeepAliveTime = time.Duration(8) * time.Hour
 
 	// KeepAliveTimeout 客户端在ping以后等待的时间
-	KeepAliveTimeout = time.Duration(3) * time.Second
+	KeepAliveTimeout = time.Duration(20) * time.Second
 )
 
 var DefaultDialOptions = []grpc.DialOption{
