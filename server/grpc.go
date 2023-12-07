@@ -30,7 +30,7 @@ func NewGrpcServerPlugin(grpcServerFn func(ctx context.Context) *grpc.Server, se
 		err:      make(chan error, 1),
 		conf:     &GrpcServerPluginConf{},
 	}
-	plg.Flags().StringVar(&plg.conf.GrpcListen, "grpc-endpoint", "0.0.0.0:8080", "grpc监听地址,默认为 [0.0.0.0:8080]")
+	plg.Flags().StringVar(&plg.conf.GrpcEndpoint, "grpc-endpoint", "0.0.0.0:8080", "grpc监听地址,默认为 [0.0.0.0:8080]")
 	plg.Flags().StringVar(&plg.conf.ServiceEndpoint, "service-endpoint", "", "服务注册使用的地址，从环境变量中取或者取第一个非回环ip [ip:port]")
 	return plg
 }
@@ -52,8 +52,8 @@ type GrpcServerPlugin struct {
 }
 
 type GrpcServerPluginConf struct {
-	GrpcListen      string `yaml:"grpc-endpoint" json:"grpc-endpoint"`
-	ServiceEndpoint string `yaml:"service_endpoint" json:"service_endpoint"`
+	GrpcEndpoint    string `yaml:"grpc-endpoint" json:"grpc-endpoint"`
+	ServiceEndpoint string `yaml:"service-endpoint" json:"service-endpoint"`
 }
 
 var ErrorEmptyEndpoint = errors.New("grpc server plugin used but not initialization")
@@ -69,7 +69,7 @@ func (g *GrpcServerPlugin) Init(ctx context.Context) error {
 			ctx,
 			"grpc server init discover the entrance",
 			err,
-			logger.WithField("grpcServerListen", g.conf.GrpcListen),
+			logger.WithField("grpcServerListen", g.conf.GrpcEndpoint),
 			logger.WithField("grpcServiceEndpoint", g.conf.ServiceEndpoint),
 		)
 		return err
@@ -77,15 +77,15 @@ func (g *GrpcServerPlugin) Init(ctx context.Context) error {
 	logger.Info(
 		ctx,
 		"grpc server init",
-		logger.WithField("grpcServerListen", g.conf.GrpcListen),
+		logger.WithField("grpcServerListen", g.conf.GrpcEndpoint),
 		logger.WithField("grpcServiceEndpoint", g.conf.ServiceEndpoint),
 		logger.WithField("grpcServiceEntrance", g.ep),
 	)
 	g.ep = ep
-	if g.conf.GrpcListen == "" {
+	if g.conf.GrpcEndpoint == "" {
 		return ErrorEmptyEndpoint
 	}
-	host, port, err := net.SplitHostPort(g.conf.GrpcListen)
+	host, port, err := net.SplitHostPort(g.conf.GrpcEndpoint)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (g *GrpcServerPlugin) Run(ctx context.Context) error {
 	logger.Info(
 		ctx,
 		"grpc server started",
-		logger.WithField("grpcServerListen", g.conf.GrpcListen),
+		logger.WithField("grpcServerListen", g.conf.GrpcEndpoint),
 		logger.WithField("grpcServiceEndpoint", g.conf.ServiceEndpoint),
 		logger.WithField("grpcServiceEntrance", g.ep),
 	)
@@ -131,7 +131,7 @@ func (g *GrpcServerPlugin) Run(ctx context.Context) error {
 
 func (g *GrpcServerPlugin) DiscoverTheEntrance() (string, error) {
 	if g.conf.ServiceEndpoint == "" {
-		g.conf.ServiceEndpoint = g.conf.GrpcListen
+		g.conf.ServiceEndpoint = g.conf.GrpcEndpoint
 	}
 	host, port, err := net.SplitHostPort(g.conf.ServiceEndpoint)
 	if err != nil {
