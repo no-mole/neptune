@@ -244,7 +244,7 @@ func BindFlags(ctx context.Context, groupName string, set *pflag.FlagSet, v *vip
 			}
 		}
 		//use default
-		if !f.Changed && f.DefValue != "" {
+		if !f.Changed && f.DefValue != "" && f.DefValue != "[]" {
 			err := set.Set(f.Name, f.DefValue)
 			if err != nil {
 				logger.Error(ctx, "bind flag error", err, logger.WithField("groupName", groupName), logger.WithField("flagName", f.Name), logger.WithField("setVal", f.DefValue))
