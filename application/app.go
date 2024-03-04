@@ -152,7 +152,7 @@ func (app *App) initConfig() {
 	v.AddConfigPath("./config")
 	v.SetConfigName("app.yaml")
 	v.SetConfigType("yaml")
-	if err := v.ReadInConfig(); err != nil {
+	if err := v.ReadInConfig(); err == nil {
 		logger.Info(app.ctx, "using config file", logger.WithField("configFileUsed", v.ConfigFileUsed()))
 	}
 	v.SetEnvPrefix(app.EnvPrefix)
