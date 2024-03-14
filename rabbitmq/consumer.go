@@ -60,6 +60,7 @@ func NewRabbitMQConsumer(workSize int64, rabbitModel string,
 		queueBindParams:    queueBindParams,
 		consumeParams:      consumeParams,
 	}
+	r.ErrChan = make(chan error, 10)
 	return r
 }
 
