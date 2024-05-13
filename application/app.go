@@ -77,7 +77,7 @@ func New(ctx context.Context) *App {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			//run hooks
 			for _, hook := range app.hooks {
-				err = hook(ctx)
+				err = hook(app.ctx)
 				if err != nil {
 					logger.Error(app.ctx, "run hook err", err)
 					return err
