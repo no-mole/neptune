@@ -139,7 +139,7 @@ func (l *logger) logger(ctx context.Context, curLevel Level, msg string, err err
 
 	span := trace.SpanFromContext(ctx)
 	if span.IsRecording() {
-		attributes := make([]attribute.KeyValue, 0)
+		attributes := make([]attribute.KeyValue, 0, 2+len(fields))
 		attributes = append(attributes, attribute.String("level", curLevel.String()))
 		attributes = append(attributes, attribute.String("msg", msg))
 
