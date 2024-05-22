@@ -2,7 +2,11 @@ package logger
 
 import (
 	"context"
+	"fmt"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func init() {
@@ -131,5 +135,21 @@ func (l *logger) logger(ctx context.Context, curLevel Level, msg string, err err
 		l.instance.Warn(msg, fields...)
 	case LevelError.Code(), LevelFatal.Code():
 		l.instance.Error(msg, fields...)
+	}
+
+	span := trace.SpanFromContext(ctx)
+	if span.IsRecording() {
+		attributes := make([]attribute.KeyValue, 0, 2+len(fields))
+		attributes = append(attributes, attribute.String("level", curLevel.String()))
+		attributes = append(attributes, attribute.String("msg", msg))
+
+		encode := zapcore.NewMapObjectEncoder()
+		for _, field := range fields {
+			field.AddTo(encode)
+		}
+		for k, v := range encode.Fields {
+			attributes = append(attributes, attribute.String(k, fmt.Sprintf("%v", v)))
+		}
+		span.AddEvent("log", trace.WithAttributes(attributes...))
 	}
 }
