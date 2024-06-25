@@ -120,6 +120,17 @@ func (l *logger) logger(ctx context.Context, curLevel Level, msg string, err err
 	if curLevel.Code() > l.level.Code() {
 		return
 	}
+	span := trace.SpanFromContext(ctx)
+
+	if span.IsRecording() {
+		if span.SpanContext().HasTraceID() {
+			fields = append(fields, WithField("trace_id", span.SpanContext().TraceID()))
+		}
+		if span.SpanContext().HasSpanID() {
+			fields = append(fields, WithField("span_id", span.SpanContext().SpanID()))
+		}
+	}
+
 	if err != nil {
 		fields = append(fields, zap.NamedError("errorMsg", err))
 	}
@@ -137,7 +148,6 @@ func (l *logger) logger(ctx context.Context, curLevel Level, msg string, err err
 		l.instance.Error(msg, fields...)
 	}
 
-	span := trace.SpanFromContext(ctx)
 	if span.IsRecording() {
 		attributes := make([]attribute.KeyValue, 0, 2+len(fields))
 		attributes = append(attributes, attribute.String("level", curLevel.String()))
