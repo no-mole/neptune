@@ -3,10 +3,13 @@ package logger
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/contrib/bridges/otelzap"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"os"
 )
 
 func init() {
@@ -19,6 +22,21 @@ var defaultLogger Logger
 // SetLogger set global logger
 func SetLogger(l Logger) {
 	defaultLogger = l
+}
+
+// SetLoggerBridge set a warped logger for opentelemetry
+func SetLoggerBridge() {
+	// anyway, global.GetLoggerProvider will return a provider.
+	provider := global.GetLoggerProvider()
+
+	if provider != nil {
+		core := zapcore.NewTee(
+			zapcore.NewCore(zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()), zapcore.AddSync(os.Stdout), zap.InfoLevel),
+			otelzap.NewCore("neptune/logger", otelzap.WithLoggerProvider(provider)),
+		)
+		instance := zap.New(core)
+		SetLogger(NewLogger(context.Background(), instance))
+	}
 }
 
 func NewLogger(ctx context.Context, l *zap.Logger) Logger {
