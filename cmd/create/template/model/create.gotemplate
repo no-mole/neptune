@@ -1,0 +1,5 @@
+package {{.TableName}}
+
+func (m *Model) Create(model *{{.StructName}}) error {
+	return m.db.Create(model).Error
+}

@@ -1,0 +1,5 @@
+package {{.TableName}}
+
+func (m *Model) Delete(id int) error {
+	return m.db.Delete(&{{.StructName}}{}, id).Error
+}

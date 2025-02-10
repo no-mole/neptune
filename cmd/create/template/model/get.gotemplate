@@ -1,0 +1,12 @@
+package {{.TableName}}
+
+func (m *Model) Get(id int) (ret *{{.StructName}}, err error) {
+	err = m.db.First(&ret, id).Error
+	return
+}
+
+func  (m *Model) List(filter map[string]interface{}) (ret []*{{.StructName}}, err error) {
+    ret = make([]*{{.StructName}}, 0)
+	err = m.db.Where(filter).Find(&ret).Error
+	return
+} 

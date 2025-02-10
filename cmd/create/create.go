@@ -61,7 +61,7 @@ func Run(args []string) error {
 	data := map[string]interface{}{
 		"ModName": modName,
 	}
-
+	modelTemplate := map[string][]byte{}
 	for len(stack) > 0 {
 		dirPath := stack[0]
 		stack = stack[1:] //pop one
@@ -86,9 +86,11 @@ func Run(args []string) error {
 			if err != nil {
 				return err
 			}
-
+			if strings.Contains(filePath, "model") { //model 单独处理
+				modelTemplate[f.Name()] = fileBody
+				continue
+			}
 			writeFileName := path.Join(baseDir, strings.Trim(strings.TrimSuffix(strings.TrimPrefix(filePath, "template"), "template"), "/")) //去掉前后的template
-
 			buf := bytes.NewBufferString("")
 			if strings.HasSuffix(filePath, ".gotemplate") { //是template 文件
 				tpl, err := template.New(f.Name()).Parse(string(fileBody))
@@ -110,6 +112,7 @@ func Run(args []string) error {
 		}
 	}
 
+	err = initModelFile(baseDir, modelTemplate, modName)
 	modInit := exec.Command("sh", "-c", fmt.Sprintf("cd %s && go mod init %s && go mod tidy && go mod vendor", baseDir, modName))
 	output, err := CmdRun(modInit)
 
