@@ -1,0 +1,5 @@
+package {{.TableName}}
+
+func (m *Model) Update(model *{{.StructName}}) error {
+	return m.db.Save(model).Error
+}

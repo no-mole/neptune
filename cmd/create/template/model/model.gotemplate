@@ -1,0 +1,25 @@
+package {{.TableName}}
+
+import (
+	"context"
+    "github.com/no-mole/neptune/database"
+    "{{.ModName}}/model"
+)
+
+type {{.StructName}} struct {
+{{range .Fields}}	{{.Name}} {{.Type}} `json:"{{.JSONName}}" gorm:"column:{{.Column}}"`
+{{end}}}
+
+type Model struct {
+	ctx context.Context
+	db  *database.BaseDb
+}
+
+func New(ctx context.Context) *Model {
+	db := &database.BaseDb{}
+	db.SetEngine(ctx, model.MysqlEngine)
+	return &Model{
+		ctx: ctx,
+		db:  db,
+	}
+}
