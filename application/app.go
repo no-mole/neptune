@@ -158,7 +158,7 @@ func (app *App) initConfig() {
 	v.SetEnvPrefix(app.EnvPrefix)
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	v.AutomaticEnv()
-	BindFlags(app.ctx, "app", app.command.Flags(), v)
+	BindFlags(app.ctx, "app", app.command.PersistentFlags(), v)
 }
 
 func (app *App) listenSigns() {
