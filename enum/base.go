@@ -30,7 +30,7 @@ var (
 	}
 
 	ErrorExecuteFunc ErrorNum = ErrorNumEntry{
-		HttpCode: http.StatusBadRequest,
+		HttpCode: http.StatusInternalServerError,
 		Code:     500,
 		Msg:      "execute func error",
 	}
