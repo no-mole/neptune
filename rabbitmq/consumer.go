@@ -3,10 +3,13 @@ package rabbitmq
 import (
 	"context"
 	"errors"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"golang.org/x/sync/errgroup"
 )
+
+const consumerReconnectDelay = 3 * time.Second
 
 type Consumer func(msg amqp.Delivery) error
 
@@ -65,59 +68,19 @@ func NewRabbitMQConsumer(workSize int64, rabbitModel string,
 }
 
 func (f *RabbitMQConsumer) Working(consumer Consumer) (err error) {
-
-	cli, exist := Client.GetClient(f.clientName)
+	_, exist := Client.GetClient(f.clientName)
 	if !exist {
 		return errors.New("rabbitmq client is not exist，client name is " + f.clientName)
 	}
-	ch, err := cli.Channel()
-	if err != nil {
-		return
-	}
-
-	_, err = ch.QueueDeclare(f.queueDeclareParams.Queue, f.queueDeclareParams.Durable, f.queueDeclareParams.AutoDelete,
-		f.queueDeclareParams.Exclusive, f.queueDeclareParams.NoWait, f.queueDeclareParams.Args)
-	if err != nil {
-		return
-	}
-
-	for _, v := range f.queueBindParams {
-		err = ch.QueueBind(v.QueueName, v.RoutingKey, v.ExchangeName,
-			f.queueDeclareParams.NoWait, f.queueDeclareParams.Args)
-		if err != nil {
-			return err
-		}
-	}
-
-	_ = ch.Close()
 
 	for i := 0; i < int(f.workers); i++ {
 		f.eg.Go(func() (err error) {
-			ch, err := cli.Channel()
-			if err != nil {
-				return
-			}
-			defer ch.Close()
-
-			err = ch.Qos(8, 0, false)
-			if err != nil {
-				return
-			}
-			msgCh, err := ch.Consume(f.consumeParams.QueueName, f.consumeParams.ConsumerName, f.consumeParams.AutoAck,
-				f.consumeParams.Exclusive, f.consumeParams.NoLocal, f.consumeParams.NoWait, f.queueDeclareParams.Args)
-			if err != nil {
-				return
-			}
 			for {
-				select {
-				case <-f.ctx.Done():
-					return f.ctx.Err()
-				case msg := <-msgCh:
-					err := consumer(msg)
-					if err != nil {
-						return err
-					}
-					_ = msg.Ack(false)
+				if err = f.consume(consumer); err != nil {
+					return err
+				}
+				if err = f.waitReconnect(); err != nil {
+					return err
 				}
 			}
 		})
@@ -127,4 +90,69 @@ func (f *RabbitMQConsumer) Working(consumer Consumer) (err error) {
 		f.ErrChan <- err
 	}
 	return nil
+}
+
+func (f *RabbitMQConsumer) consume(consumer Consumer) error {
+	cli, exist := Client.GetClient(f.clientName)
+	if !exist {
+		return errors.New("rabbitmq client is not exist，client name is " + f.clientName)
+	}
+	ch, err := cli.Channel()
+	if err != nil {
+		return nil
+	}
+	defer ch.Close()
+
+	if err = f.prepareChannel(ch); err != nil {
+		return nil
+	}
+	msgCh, err := ch.Consume(f.consumeParams.QueueName, f.consumeParams.ConsumerName, f.consumeParams.AutoAck,
+		f.consumeParams.Exclusive, f.consumeParams.NoLocal, f.consumeParams.NoWait, f.consumeParams.Args)
+	if err != nil {
+		return nil
+	}
+
+	for {
+		select {
+		case <-f.ctx.Done():
+			return f.ctx.Err()
+		case msg, ok := <-msgCh:
+			if !ok {
+				return nil
+			}
+			if err := consumer(msg); err != nil {
+				return err
+			}
+			_ = msg.Ack(false)
+		}
+	}
+}
+
+func (f *RabbitMQConsumer) prepareChannel(ch *amqp.Channel) error {
+	_, err := ch.QueueDeclare(f.queueDeclareParams.Queue, f.queueDeclareParams.Durable, f.queueDeclareParams.AutoDelete,
+		f.queueDeclareParams.Exclusive, f.queueDeclareParams.NoWait, f.queueDeclareParams.Args)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range f.queueBindParams {
+		err = ch.QueueBind(v.QueueName, v.RoutingKey, v.ExchangeName, v.NoWait, v.Args)
+		if err != nil {
+			return err
+		}
+	}
+
+	return ch.Qos(8, 0, false)
+}
+
+func (f *RabbitMQConsumer) waitReconnect() error {
+	timer := time.NewTimer(consumerReconnectDelay)
+	defer timer.Stop()
+
+	select {
+	case <-f.ctx.Done():
+		return f.ctx.Err()
+	case <-timer.C:
+		return nil
+	}
 }
